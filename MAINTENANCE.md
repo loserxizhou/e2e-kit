@@ -8,7 +8,7 @@
 
 ```bash
 git pull                                  # 更新本仓库
-node tools/refresh-from-source.mjs <源仓库根目录>   # 默认取同级 eoffice10_dev；也可用环境变量 E2E_SOURCE_REPO
+node tools/refresh-from-source.mjs [源仓库根目录]   # 源仓库自动识别：kit 父级（放在源仓库内时）或同级 eoffice10_dev；也可用 E2E_SOURCE_REPO 指定
 npm test                                  # 行为测试必须全绿
 git add templates && git commit && git push
 ```

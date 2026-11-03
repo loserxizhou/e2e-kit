@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 从主仓库 e2e/ 导出框架文件 → 裁剪内部内容 → 脱敏 → 转成 templates/*.tpl。
 // 用法：node tools/refresh-from-source.mjs [源仓库根目录]
-//   源仓库默认取本仓库同级的 eoffice10_dev；也可用环境变量 E2E_SOURCE_REPO 指定。
+//   源仓库自动识别：参数 > E2E_SOURCE_REPO > kit 所在目录父级（kit 放在源仓库内）> 同级 eoffice10_dev。
 // 手工维护模板（存在即跳过，不覆盖）：readme.md.tpl、env.example.tpl、agents-route.md。
 // 每条替换规则带命中数校验：脱敏类规则 0 命中直接报错，防止源文件演变后静默漏脱敏。
 
@@ -155,11 +155,18 @@ function gate(rel, content, failures) {
 }
 
 function main() {
-  const sourceRepo = resolve(
-    process.argv[2] ?? process.env.E2E_SOURCE_REPO ?? join(KIT_ROOT, '..', 'eoffice10_dev'),
-  );
-  if (!existsSync(join(sourceRepo, 'e2e', 'package.json'))) {
-    console.error(`源仓库不正确（缺 e2e/package.json）：${sourceRepo}`);
+  const candidates = [
+    process.argv[2],
+    process.env.E2E_SOURCE_REPO,
+    join(KIT_ROOT, '..'), // kit 放在源仓库内（如 eoffice10_dev/e2e-kit）
+    join(KIT_ROOT, '..', 'eoffice10_dev'), // kit 单独克隆时的同级源仓库
+  ];
+  const sourceRepo = candidates
+    .filter(Boolean)
+    .map((p) => resolve(p))
+    .find((p) => existsSync(join(p, 'e2e', 'package.json')));
+  if (!sourceRepo) {
+    console.error(`未找到源仓库（需含 e2e/package.json）。尝试过：\n${candidates.filter(Boolean).map((p) => `  - ${resolve(p)}`).join('\n')}\n请用参数或 E2E_SOURCE_REPO 指定。`);
     process.exit(1);
   }
 
