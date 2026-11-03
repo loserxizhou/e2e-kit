@@ -6,7 +6,7 @@
   "description": "e-office e2e 测试一键接入：项目初始化 + 框架升级 + 客户端 MCP/skill 配置",
   "repository": {
     "type": "git",
-    "url": "https://github.com/loserxizhou/eoffice-e2e.git"
+    "url": "https://github.com/loserxizhou/e2e-kit.git"
   },
   "bin": {
     "e2e-kit": "./bin/e2e-kit.mjs"

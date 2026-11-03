@@ -2,13 +2,13 @@
 # e2e-kit 一键引导：拿到 kit → 装 skill + MCP → 初始化当前项目。
 #
 # 用法（本地已克隆，推荐）：
-#   git clone https://github.com/loserxizhou/eoffice-e2e.git
+#   git clone https://github.com/loserxizhou/e2e-kit.git
 #   cd <目标项目> && bash <克隆目录>/run.sh        # 客户端自动探测（Codex/Claude/Cursor）
 #   bash <克隆目录>/run.sh --client workbuddy,zcode # 显式指定：workbuddy/zcode/dsh 探测不到
 #   bash <克隆目录>/run.sh --project /path/to/repo
 #
 # 用法（远程一行，首次试用）：
-#   bash <(curl -fsSL https://raw.githubusercontent.com/loserxizhou/eoffice-e2e/main/run.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/loserxizhou/e2e-kit/main/run.sh)
 #
 # 升级已有项目的 e2e 框架文件（不覆盖手改文件）：
 #   node <克隆目录>/bin/e2e-kit.mjs upgrade --project /path/to/repo
@@ -21,8 +21,8 @@
 
 set -euo pipefail
 
-REPO_URL="https://github.com/loserxizhou/eoffice-e2e.git"
-RAW_RUN_SH="https://raw.githubusercontent.com/loserxizhou/eoffice-e2e/main/run.sh"
+REPO_URL="https://github.com/loserxizhou/e2e-kit.git"
+RAW_RUN_SH="https://raw.githubusercontent.com/loserxizhou/e2e-kit/main/run.sh"
 KIT_HOME="${E2E_KIT_HOME:-$HOME/.e2e-kit}"
 E2E_KIT_URL="${E2E_KIT_URL:-$REPO_URL}"
 

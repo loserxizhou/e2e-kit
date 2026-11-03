@@ -19,7 +19,7 @@ export class LocateError extends Error {
 
 export const NOT_INITIALIZED_MESSAGE = [
   '未找到 e2e 配置：从当前目录向上没有发现 e2e.config.ts。',
-  '· 本项目尚未初始化：克隆 e2e-kit 仓库后运行 bash run.sh（github.com/loserxizhou/eoffice-e2e）',
+  '· 本项目尚未初始化：克隆 e2e-kit 仓库后运行 bash run.sh（github.com/loserxizhou/e2e-kit）',
   '· e2e 放在自定义目录：在 .e2e-kit.json 的 dir/config 中记录，或设置 E2E_CONFIG',
   '· 多个子项目：用 --project <目录> 指定项目根',
 ].join('\n');

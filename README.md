@@ -8,14 +8,14 @@ e-office e2e 测试一键接入工具包：**一条命令完成项目初始化 +
 
 ```bash
 # 1. 克隆本仓库（任意位置）
-git clone https://github.com/loserxizhou/eoffice-e2e.git
+git clone https://github.com/loserxizhou/e2e-kit.git
 
 # 2. 进入你的项目根目录，初始化（交互式；--client 省略时自动探测本机客户端）
 cd <你的项目>
 bash <克隆目录>/run.sh
 
 # 远程一行（首次试用，不先克隆）
-bash <(curl -fsSL https://raw.githubusercontent.com/loserxizhou/eoffice-e2e/main/run.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/loserxizhou/e2e-kit/main/run.sh)
 ```
 
 初始化会自动：
