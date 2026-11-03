@@ -1,0 +1,31 @@
+{
+  "name": "eoffice-e2e-kit",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "e-office e2e 测试一键接入：项目初始化 + 框架升级 + 客户端 MCP/skill 配置",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/loserxizhou/eoffice-e2e.git"
+  },
+  "bin": {
+    "e2e-kit": "./bin/e2e-kit.mjs"
+  },
+  "engines": {
+    "node": ">=22.22.3"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "refresh": "node tools/refresh-from-source.mjs"
+  },
+  "files": [
+    "bin",
+    "skills",
+    "templates",
+    "tools",
+    "run.sh",
+    "README.md",
+    "MAINTENANCE.md"
+  ],
+  "license": "UNLICENSED"
+}
