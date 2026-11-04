@@ -502,7 +502,10 @@ export async function runInit(argv) {
   if (clients.length) {
     const targets = clients.includes('auto') ? detectClients(projectRoot) : clients;
     if (targets.length) {
-      const installed = installClients(targets, projectRoot);
+      const installed = installClients(targets, projectRoot, {
+        migration: 'safe',
+        skillGenerated: marker?.skillGenerated,
+      });
       result.clientInstall = installed.clients.map((item) => ({
         client: item.client,
         files: item.files,
@@ -513,6 +516,8 @@ export async function runInit(argv) {
       for (const item of installed.clients) {
         if (item.error) result.warnings.push(`客户端 ${item.client} 接入失败：${item.error}`);
       }
+      const finalMarker = mergeMarker(readJson(markerFile, null), { skillGenerated: installed.skillGenerated });
+      writeText(markerFile, `${JSON.stringify(finalMarker, null, 2)}\n`);
     } else {
       result.warnings.push('--client auto 未检测到可用客户端（claude/codex/cursor），已跳过接入。');
     }

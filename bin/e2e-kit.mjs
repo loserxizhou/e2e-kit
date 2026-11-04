@@ -12,7 +12,7 @@ const USAGE = `e2e-kit v${version} — e2e 测试的项目初始化工具
 
 用法:
   e2e-kit init [选项]     初始化/体检项目，并接入指定客户端（--client）
-  e2e-kit upgrade [选项]  升级项目内未被手改的 e2e 框架文件
+  e2e-kit upgrade [选项]  选择 safe/adopt 后升级框架文件与 e2e-kit Skill
   e2e-kit doctor [选项]   体检当前项目（不改文件）
   e2e-kit mcp [选项]      MCP 包装器：定位项目并启动 e2e mcp
   e2e-kit version         打印版本
@@ -48,7 +48,7 @@ async function main() {
       console.log(upgradeHelp());
       return 0;
     }
-    return runUpgrade(rest);
+    return await runUpgrade(rest);
   }
   if (command === 'doctor') {
     return runDoctor(rest);

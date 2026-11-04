@@ -135,3 +135,41 @@ test('upgrade 未初始化项目：明确报错，不写任何文件', () => {
   assert.match(stderr, /先运行 e2e-kit init/);
   assert.ok(!existsSync(join(project, '.e2e-kit.json')));
 });
+
+test('upgrade 迁移模式：safe 保护旧框架与 Skill，adopt 明确接管两者', () => {
+  const project = makeProject();
+  const seeded = run('init', project, ['--url', 'http://localhost:4200/', '--user', 'admin', '--client', 'codex']);
+  assert.equal(seeded.res.status, 0, seeded.stderr);
+  const skill = join(project, '.agents', 'skills', 'e2e-kit', 'SKILL.md');
+  writeFileSync(skill, `${readFileSync(skill, 'utf8')}\n用户定制\n`);
+  writeFileSync(join(project, 'e2e', 'docs', '运行与结果管理.md'), '# 旧版手改\n');
+
+  const safe = run('upgrade', project, ['--migration', 'safe']);
+  assert.equal(safe.res.status, 0, safe.stderr);
+  assert.equal(safe.json.migration, 'safe');
+  assert.match(readFileSync(skill, 'utf8'), /用户定制/);
+  assert.equal(readFileSync(join(project, 'e2e', 'docs', '运行与结果管理.md'), 'utf8'), '# 旧版手改\n');
+  assert.ok(safe.json.skills.some((item) => item.skipped.some((path) => path.includes('用户已修改'))));
+
+  const adopted = run('upgrade', project, ['--migration', 'adopt']);
+  assert.equal(adopted.res.status, 0, adopted.stderr);
+  assert.equal(adopted.json.migration, 'adopt');
+  assert.doesNotMatch(readFileSync(skill, 'utf8'), /用户定制/);
+  assert.notEqual(readFileSync(join(project, 'e2e', 'docs', '运行与结果管理.md'), 'utf8'), '# 旧版手改\n');
+});
+
+test('upgrade 旧项目：safe 保留来源不明文件，adopt 才接管', () => {
+  const project = makeProject();
+  mkdirSync(join(project, 'e2e'), { recursive: true });
+  writeFileSync(join(project, 'e2e', 'e2e.config.ts'), 'export default { legacy: true };\n');
+
+  const safe = run('upgrade', project, ['--migration', 'safe']);
+  assert.equal(safe.res.status, 0, safe.stderr);
+  assert.match(readFileSync(join(project, 'e2e', 'e2e.config.ts'), 'utf8'), /legacy/);
+  assert.ok(safe.json.skipped.some((item) => item.path === 'e2e/e2e.config.ts'));
+
+  const adopted = run('upgrade', project, ['--migration', 'adopt']);
+  assert.equal(adopted.res.status, 0, adopted.stderr);
+  assert.doesNotMatch(readFileSync(join(project, 'e2e', 'e2e.config.ts'), 'utf8'), /legacy/);
+  assert.ok(adopted.json.adopted.includes('e2e/e2e.config.ts'));
+});

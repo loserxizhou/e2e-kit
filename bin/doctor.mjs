@@ -3,8 +3,8 @@
 import { dirname, join, resolve } from 'node:path';
 
 import { findRepoRoot, locateProject, LocateError } from './lib/locate.mjs';
-import { kitVersion } from './lib/kit.mjs';
-import { dirExists, fileExists, readJson, readText } from './lib/util.mjs';
+import { SKILLS_DIR, kitVersion } from './lib/kit.mjs';
+import { dirExists, fileExists, readJson, readText, sha256 } from './lib/util.mjs';
 
 const KIT_VERSION = kitVersion();
 
@@ -132,6 +132,12 @@ export function runDoctor(argv) {
     '客户端 skill',
     installedSkill ? `已安装：${installedSkill}` : '未安装（运行 init --client <codex|claude|cursor|dsh>）',
   );
+  if (installedSkill) {
+    const currentHash = sha256(readText(join(projectRoot, installedSkill, 'SKILL.md')));
+    const sourceHash = sha256(readText(join(SKILLS_DIR, 'e2e-kit', 'SKILL.md')));
+    if (currentHash === sourceHash) add('ok', 'e2e-kit Skill 版本', '与当前 kit 一致');
+    else add('warn', 'e2e-kit Skill 版本', '项目内 Skill 与当前 kit 不一致；升级时选择 adopt 才会接管来源不明或手改版本');
+  }
 
   const mcpFiles = ['.mcp.json', '.codex/config.toml', '.cursor/mcp.json'];
   const configuredMcp = mcpFiles.find((rel) => readText(join(projectRoot, rel), '').includes('e2e'));

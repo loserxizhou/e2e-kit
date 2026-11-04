@@ -14,7 +14,7 @@ description: 初始化、升级、体检、运行本仓库的端到端测试（�
 | 用户说 | 先做什么 |
 | --- | --- |
 | 「初始化 e2e / 装一下测试环境」 | `bash <kit>/run.sh`（幂等只补缺；省略 `--client` 自动探测本机客户端，**不要替用户写死某个客户端**）。**全新项目**先向用户索取被测地址 APP_URL（必须以 `/` 结尾）与测试账号，密码经环境变量 `E2E_INIT_PASSWORD` 传入，不写进命令行 |
-| 「升级框架 / 收到升级通知」 | `node <kit>/bin/e2e-kit.mjs upgrade --project .`（只刷新未被手改的框架文件；手改文件会列出），随后 `cd <dir> && npm ci && npm run sync -- --client <客户端>`，重启客户端 |
+| 「升级框架 / 收到升级通知」 | 先询问迁移模式：`safe` 保护来源不明/手改文件，`adopt` 接管旧框架；然后执行 `node <kit>/bin/e2e-kit.mjs upgrade --project .`。升级同时处理项目内 e2e-kit Skill，随后 `cd <dir> && npm ci && npm run sync -- --client <客户端>`，重启客户端 |
 | 「体检 / 环境有问题 / 先检查环境」 | `node <kit>/bin/e2e-kit.mjs doctor --project .`（只读，不改文件） |
 | 「跑一下测试 / 回归」 | `cd <dir> && npm run test:run -- tests/`（批次入口；先加 `--list` 预览范围） |
 | 「跑一下 / 跑一遍」（意图不明） | 先展示执行意图：体验 `experience`、冒烟 `smoke`、正式 `formal`、续跑 `resume`；`scratch` 或绑定 `--case-doc` 时缺 `--intent` 入口会拒绝启动 |
@@ -56,7 +56,7 @@ description: 初始化、升级、体检、运行本仓库的端到端测试（�
 
 - 生成 Excel 前必读 `<dir>/templates/测试用例文档格式.md`，不凭会话记忆：固定说明、16 列明细、账号矩阵、测试数据、造数核验；涉及权限验证时必须有能力权限矩阵，说明页明确适用性。首次生成统一走 `npm run test:cases -- draft <json> --output <xlsx>`（输入见 `<dir>/docs/初稿生成入口.md`），测试人员确认后才 `test:cases confirm` 记录审核。
 - 设计初稿自检 `python3 <dir>/scripts/check-case-doc.py <xlsx> --draft`；执行结果回填后自检 `python3 <dir>/scripts/check-case-doc.py <xlsx> <本批次report.json>`，均修正到 0 error；前置核验不计入业务通过数，证据须附文件或可访问链接。
-- `<dir>/` 内的框架文件（配置、脚本、`templates/**`、`docs/**`、公共 helper）测试任务不手改；框架缺陷保留证据交接维护者，由 `e2e-kit upgrade` 统一升级。初始化只补缺；升级不覆盖手改文件、不触碰用户资产。
+- `<dir>/` 内的框架文件（配置、脚本、`templates/**`、`docs/**`、公共 helper）测试任务不手改；框架缺陷保留证据交接维护者，由 `e2e-kit upgrade` 统一升级。升级前必须让用户选择 `safe` 或 `adopt`；`safe` 不覆盖来源不明/手改文件，`adopt` 才接管旧框架。`.env`、业务用例、`scratch/`、`knowledge/`、`exports/` 永不触碰。
 
 ## 参考规范
 

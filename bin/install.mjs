@@ -3,12 +3,20 @@
 // 由 init --client 调用，不单独暴露命令。
 
 import { cpSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 
 import { SKILLS_DIR, mcpWrapperPath } from './lib/kit.mjs';
-import { readJson, readText, writeText } from './lib/util.mjs';
+import { readJson, readText, sha256, writeText } from './lib/util.mjs';
 
 export const SUPPORTED_CLIENTS = ['claude', 'codex', 'cursor', 'workbuddy', 'zcode', 'dsh'];
+
+export function detectInstalledClients(projectRoot) {
+  // dsh 与 Codex 共用 .agents/skills/e2e-kit，无法仅凭目录区分；旧项目需显式传 --client dsh。
+  return ['claude', 'codex', 'cursor'].filter((client) => {
+    const dir = skillDir(client, projectRoot);
+    return Boolean(dir && existsSync(join(dir, 'SKILL.md')));
+  });
+}
 
 // command 用 init 进程的绝对路径：MCP 由客户端启动，继承的 PATH 里 node 可能低于 22.22.3
 function mcpEntry(projectRoot) {
@@ -69,10 +77,42 @@ function appendCodexToml(file, projectRoot) {
   return { changed: true };
 }
 
-function copySkill(destDir) {
-  if (existsSync(destDir)) return { changed: false };
-  cpSync(join(SKILLS_DIR, 'e2e-kit'), destDir, { recursive: true });
-  return { changed: true };
+const SKILL_CLIENT_DIRS = {
+  claude: ['.claude', 'skills', 'e2e-kit'],
+  codex: ['.agents', 'skills', 'e2e-kit'],
+  cursor: ['.cursor', 'skills', 'e2e-kit'],
+  dsh: ['.agents', 'skills', 'e2e-kit'],
+};
+
+export function skillDir(client, projectRoot) {
+  const parts = SKILL_CLIENT_DIRS[client];
+  return parts ? join(projectRoot, ...parts) : null;
+}
+
+function syncSkill(client, projectRoot, migration, generated) {
+  const sourceDir = join(SKILLS_DIR, 'e2e-kit');
+  const source = join(sourceDir, 'SKILL.md');
+  const destDir = skillDir(client, projectRoot);
+  if (!destDir) return { changed: false, status: 'unsupported' };
+  const sourceHash = sha256(readText(source));
+  const skillPath = relative(projectRoot, join(destDir, 'SKILL.md')).split('\\').join('/');
+  const current = join(destDir, 'SKILL.md');
+  if (!existsSync(destDir)) {
+    cpSync(sourceDir, destDir, { recursive: true });
+    return { changed: true, status: 'created', path: skillPath, hash: sourceHash };
+  }
+  if (!existsSync(current)) {
+    cpSync(sourceDir, destDir, { recursive: true, force: true });
+    return { changed: true, status: 'created', path: skillPath, hash: sourceHash };
+  }
+  const currentHash = sha256(readText(current));
+  if (currentHash === sourceHash) return { changed: false, status: 'unchanged', path: skillPath, hash: sourceHash };
+  const recorded = generated?.[skillPath];
+  if (migration !== 'adopt' && recorded !== currentHash) {
+    return { changed: false, status: 'skipped', path: skillPath, reason: recorded ? '用户已修改，保留现状' : '来源不明，保留现状' };
+  }
+  cpSync(sourceDir, destDir, { recursive: true, force: true });
+  return { changed: true, status: migration === 'adopt' && recorded !== currentHash ? 'adopted' : 'updated', path: skillPath, hash: sourceHash };
 }
 
 function snippetFor(client, projectRoot) {
@@ -110,8 +150,9 @@ function note(record, changed, label) {
  * @param {string[]} clients
  * @param {string} projectRoot
  */
-export function installClients(clients, projectRoot) {
+export function installClients(clients, projectRoot, { migration = 'safe', skillGenerated = {} } = {}) {
   const result = { ok: true, clients: [] };
+  result.skillGenerated = { ...skillGenerated };
   const entry = mcpEntry(projectRoot);
 
   for (const client of clients) {
@@ -119,16 +160,28 @@ export function installClients(clients, projectRoot) {
     try {
       if (client === 'claude') {
         note(record, mergeMcpJson(join(projectRoot, '.mcp.json'), entry).changed, '.mcp.json');
-        note(record, copySkill(join(projectRoot, '.claude', 'skills', 'e2e-kit')).changed, '.claude/skills/e2e-kit/');
+        const skill = syncSkill(client, projectRoot, migration, skillGenerated);
+        note(record, skill.changed, '.claude/skills/e2e-kit/');
+        if (skill.hash) result.skillGenerated[skill.path] = skill.hash;
+        if (skill.status === 'skipped') record.skipped.push(`${skill.path}（${skill.reason}）`);
       } else if (client === 'codex') {
         note(record, appendCodexToml(join(projectRoot, '.codex', 'config.toml'), projectRoot).changed, '.codex/config.toml');
-        note(record, copySkill(join(projectRoot, '.agents', 'skills', 'e2e-kit')).changed, '.agents/skills/e2e-kit/');
+        const skill = syncSkill(client, projectRoot, migration, skillGenerated);
+        note(record, skill.changed, '.agents/skills/e2e-kit/');
+        if (skill.hash) result.skillGenerated[skill.path] = skill.hash;
+        if (skill.status === 'skipped') record.skipped.push(`${skill.path}（${skill.reason}）`);
       } else if (client === 'cursor') {
         note(record, mergeMcpJson(join(projectRoot, '.cursor', 'mcp.json'), entry).changed, '.cursor/mcp.json');
-        note(record, copySkill(join(projectRoot, '.cursor', 'skills', 'e2e-kit')).changed, '.cursor/skills/e2e-kit/');
+        const skill = syncSkill(client, projectRoot, migration, skillGenerated);
+        note(record, skill.changed, '.cursor/skills/e2e-kit/');
+        if (skill.hash) result.skillGenerated[skill.path] = skill.hash;
+        if (skill.status === 'skipped') record.skipped.push(`${skill.path}（${skill.reason}）`);
       } else {
         if (client === 'dsh') {
-          note(record, copySkill(join(projectRoot, '.agents', 'skills', 'e2e-kit')).changed, '.agents/skills/e2e-kit/');
+          const skill = syncSkill(client, projectRoot, migration, skillGenerated);
+          note(record, skill.changed, '.agents/skills/e2e-kit/');
+          if (skill.hash) result.skillGenerated[skill.path] = skill.hash;
+          if (skill.status === 'skipped') record.skipped.push(`${skill.path}（${skill.reason}）`);
         }
         record.snippet = snippetFor(client, projectRoot);
       }

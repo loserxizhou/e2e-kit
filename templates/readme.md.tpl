@@ -62,7 +62,7 @@ Excel 是业务标准的审核入口，脚本承载执行；业务变化须重�
 
 业务用例、场景 helper、用例 Excel/审核回执和有证据的知识记录由测试侧维护；`e2e.config.ts`、`package.json`、`scripts/**`、`templates/**`、`docs/**`、公共 helper 等框架文件由 e2e-kit 统一分发，测试任务不手改，遇到框架缺陷保留证据交接维护者。完整边界见 [维护与提交标准](docs/维护与提交标准.md)。
 
-框架升级：运行 `e2e-kit upgrade`（未手改的框架文件刷新为新版，手改过的跳过并列出），随后 `npm ci && npm run sync -- --client <客户端>`，重启客户端。升级与执行意图说明见[怎么指挥 AI 跑测试](docs/怎么指挥AI跑测试.md)。
+框架升级：运行 `e2e-kit upgrade`，先选择迁移模式。`safe` 只刷新有生成记录且未手改的框架文件；`adopt` 接管来源不明或手改的旧框架文件。两种模式都会按同一规则处理项目内的 e2e-kit Skill，`.env`、业务用例、草稿、知识和导出文件不会触碰。随后执行 `npm ci && npm run sync -- --client <客户端>`，重启客户端。升级与执行意图说明见[怎么指挥 AI 跑测试](docs/怎么指挥AI跑测试.md)。
 
 ## 常用命令
 
