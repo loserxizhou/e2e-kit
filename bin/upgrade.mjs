@@ -11,8 +11,9 @@ import { basename, dirname, join, relative, resolve } from 'node:path';
 import { buildFiles, parseArgs, E2E_VERSION } from './init.mjs';
 import { ask, isInteractive } from './lib/prompt.mjs';
 import { detectInstalledClients, installClients, SUPPORTED_CLIENTS } from './install.mjs';
+import { TEMPLATES_DIR } from './lib/kit.mjs';
 import { configCandidatesIn, findRepoRoot, locateProject } from './lib/locate.mjs';
-import { fileExists, mergeMarker, posix, readJson, readText, sha256, writeText } from './lib/util.mjs';
+import { fileExists, loadTemplate, mergeIgnoreList, mergeMarkedSection, mergeMarker, posix, readJson, readText, sha256, writeText } from './lib/util.mjs';
 
 const COLOR = process.stdout.isTTY;
 const c = {
@@ -22,6 +23,8 @@ const c = {
   red: (s) => (COLOR ? `\x1b[31m${s}\x1b[0m` : s),
   bold: (s) => (COLOR ? `\x1b[1m${s}\x1b[0m` : s),
 };
+
+const IGNORE_LINES = ['node_modules/', '.env', '.env.*', '!.env.example', '.e2e*/', 'scratch/', 'exports/', 'e2e-kit/', '.e2e-kit.json'];
 
 export function help() {
   return `用法: e2e-kit upgrade [选项]
@@ -98,6 +101,7 @@ export async function runUpgrade(argv) {
     updated: [],
     unchanged: [],
     skipped: [],
+    modified: [],
     warnings: [],
     nextSteps: [],
   };
@@ -127,6 +131,19 @@ export async function runUpgrade(argv) {
   result.migration = migration;
   say(c.bold(`e2e-kit upgrade → ${projectRoot} / ${relDir}`));
   if (dryRun) say(c.dim('（dry-run：不写任何文件）'));
+
+  // 旧项目可能没有初始化时追加的根规则；只补缺，不覆盖用户已有内容。
+  const mergedIgnore = mergeIgnoreList(readText(join(projectRoot, '.gitignore'), ''), IGNORE_LINES);
+  if (mergedIgnore.added.length) {
+    result.modified.push('.gitignore');
+    if (!dryRun) writeText(join(projectRoot, '.gitignore'), mergedIgnore.content);
+  }
+  const routeBody = loadTemplate(TEMPLATES_DIR, 'agents-route.md').replaceAll('{{DIR}}', dirName);
+  const mergedAgents = mergeMarkedSection(readText(join(projectRoot, 'AGENTS.md'), ''), routeBody);
+  if (mergedAgents.added) {
+    result.modified.push('AGENTS.md');
+    if (!dryRun) writeText(join(projectRoot, 'AGENTS.md'), mergedAgents.content);
+  }
 
   // 旧版 kit（E2E_* 变量名）升级提示
   const envText = readText(join(targetDir, '.env'), '');

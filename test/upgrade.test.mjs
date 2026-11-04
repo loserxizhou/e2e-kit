@@ -167,6 +167,9 @@ test('upgrade 旧项目：safe 保留来源不明文件，adopt 才接管', () =
   assert.equal(safe.res.status, 0, safe.stderr);
   assert.match(readFileSync(join(project, 'e2e', 'e2e.config.ts'), 'utf8'), /legacy/);
   assert.ok(safe.json.skipped.some((item) => item.path === 'e2e/e2e.config.ts'));
+  assert.ok(safe.json.modified.includes('.gitignore'));
+  assert.ok(safe.json.modified.includes('AGENTS.md'));
+  assert.match(readFileSync(join(project, 'AGENTS.md'), 'utf8'), /e2e-kit:route:begin/);
 
   const adopted = run('upgrade', project, ['--migration', 'adopt']);
   assert.equal(adopted.res.status, 0, adopted.stderr);
