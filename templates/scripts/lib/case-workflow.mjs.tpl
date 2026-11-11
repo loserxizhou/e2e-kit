@@ -9,12 +9,13 @@ import { caseId, infrastructure, inspectReport } from './case-report.mjs';
 const hash = (data) => createHash('sha256').update(data).digest('hex');
 const readJson = (root, file) => JSON.parse(readFileSync(projectPath(root, file), 'utf8'));
 const reader = join(dirname(fileURLToPath(import.meta.url)), '../read-case-doc.py');
+const python = process.env.E2E_PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
 
 export function readCaseDoc(root, file) {
   const path = projectPath(root, file);
   const source = relative(root, path).replaceAll('\\', '/');
   if (!/^(tests|scratch|exports)\/.+\.xlsx$/i.test(source)) throw new Error('用例文档须位于 tests、scratch 或 exports 中');
-  const result = spawnSync(process.env.E2E_PYTHON || 'python3', ['-B', reader, path], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024, timeout: 30_000 });
+  const result = spawnSync(python, ['-B', reader, path], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024, timeout: 30_000 });
   if (result.error || result.status !== 0) throw new Error(`用例文档读取失败：${result.stderr?.trim().slice(0, 200) || '请检查 Python/openpyxl 依赖'}`);
   const model = JSON.parse(result.stdout);
   if (model.schemaVersion !== 'eoffice-case-doc-1' || !model.cases?.length) throw new Error('无法识别用例文档结构');
@@ -137,7 +138,7 @@ export function checkArchive(root, batch) {
       if (expected.has(record.id)) problems.push(`基线编号重复：${record.id}`);
       expected.add(record.id);
     }
-    const validation = spawnSync(process.env.E2E_PYTHON || 'python3', ['-B', join(dirname(reader), 'check-case-doc.py'),
+    const validation = spawnSync(python, ['-B', join(dirname(reader), 'check-case-doc.py'),
       projectPath(root, doc.source), projectPath(output, 'report.json')], { encoding: 'utf8', timeout: 30_000, maxBuffer: 2 * 1024 * 1024 });
     if (validation.error || validation.status !== 0) problems.push(`Excel 结果或准备记录尚未通过完整校验：${doc.source}（请使用 check-case-doc.py 查看明细）`);
   }

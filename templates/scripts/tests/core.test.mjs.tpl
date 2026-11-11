@@ -120,6 +120,9 @@ test('原生参数原样传递，项目路径和输出边界不可被覆盖', ()
     assert.throws(() => parseRunOptions(args, '/project/e2e'));
   }
   assert.deepEqual(parseRunOptions([], '/project/e2e').files, ['tests/']);
+  assert.deepEqual(parseRunOptions(['tests\\文档\\创建\\创建.e2e.ts', '--case-doc', 'exports\\文档\\用例.xlsx'], '/project/e2e').files, ['tests/文档/创建/创建.e2e.ts']);
+  assert.deepEqual(parseRunOptions(['tests\\文档\\创建\\创建.e2e.ts', '--case-doc', 'exports\\文档\\用例.xlsx'], '/project/e2e').caseDocs, ['exports/文档/用例.xlsx']);
+  assert.deepEqual(parseRunOptions(['--module', '文档\\创建'], '/project/e2e').files, ['tests/文档/创建']);
   assert.equal(parseRunOptions(['scratch/模块/场景', '--case-doc', 'exports/模块/用例.xlsx', '--intent', 'formal'], '/project/e2e').mode, 'formal');
   assert.equal(parseRunOptions(['scratch/模块/场景', '--case-doc', 'exports/模块/用例.xlsx', '--intent', 'smoke'], '/project/e2e').mode, 'debug');
   assert.equal(parseRunOptions(['scratch/模块/场景', '--case-doc', 'exports/模块/用例.xlsx'], '/project/e2e').requiresIntent, true);

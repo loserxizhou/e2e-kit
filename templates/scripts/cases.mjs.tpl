@@ -7,6 +7,8 @@ import { baselineOf, checkArchive, confirmCaseDoc, readCaseDoc } from './lib/cas
 import { inspectReport } from './lib/case-report.mjs';
 
 export function runCases(root, args) {
+  const portablePath = (value) => value.replaceAll('\\', '/');
+  const python = process.env.E2E_PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
   const [action, ...rest] = args;
   const option = (name) => { const i = rest.indexOf(name); return i < 0 ? null : rest[i + 1]; };
   if (!action || action === '--help') {
@@ -22,14 +24,14 @@ export function runCases(root, args) {
     : ['results', 'archive-check'].includes(action) ? rest.length === 2 && rest[0] === '--run' : false;
   if (!valid || rest.some((value) => !value || /[\r\n\0]/.test(value))) throw new Error('请按 --help 填写完整参数，不接受额外选项');
   if (action === 'draft') {
-    const input = projectPath(root, rest[0]);
-    const output = projectPath(root, rest[2]);
+    const input = projectPath(root, portablePath(rest[0]));
+    const output = projectPath(root, portablePath(rest[2]));
     const generate = join(dirname(fileURLToPath(import.meta.url)), 'generate-case-doc.py');
-    const result = spawnSync(process.env.E2E_PYTHON || 'python3', ['-B', generate, root, input, output], { encoding: 'utf8', timeout: 60_000, maxBuffer: 2 * 1024 * 1024 });
+    const result = spawnSync(python, ['-B', generate, root, input, output], { encoding: 'utf8', timeout: 60_000, maxBuffer: 2 * 1024 * 1024 });
     if (result.error || result.status !== 0) throw new Error(`初稿生成未完成：${result.stderr?.trim().slice(0, 2500) || '请检查 Python/openpyxl 依赖和文件权限'}`);
     console.log(JSON.stringify(JSON.parse(result.stdout), null, 2));
   } else if (action === 'list') {
-    const module = option('--module');
+    const module = portablePath(option('--module') ?? '');
     if (!module || !module.split('/').every((p) => p && !p.startsWith('_') && !p.includes('.') && !p.includes('\\'))) throw new Error('请填写有效模块目录');
     const found = [];
     const walk = (file) => {
@@ -49,7 +51,8 @@ export function runCases(root, args) {
     for (const base of ['tests', 'scratch', 'exports']) walk(`${base}/${module}`);
     console.log(JSON.stringify({ module, documents: found }, null, 2));
   } else if (action === 'inspect' || action === 'confirm') {
-    const model = action === 'confirm' ? confirmCaseDoc(root, rest[0], option('--reviewer')) : readCaseDoc(root, rest[0]);
+    const file = portablePath(rest[0]);
+    const model = action === 'confirm' ? confirmCaseDoc(root, file, option('--reviewer')) : readCaseDoc(root, file);
     console.log(JSON.stringify(model, null, 2));
   } else if (action === 'archive-check') {
     const result = checkArchive(root, option('--run'));

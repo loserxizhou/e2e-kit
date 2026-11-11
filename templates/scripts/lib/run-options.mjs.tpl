@@ -8,6 +8,9 @@ const intents = new Set(['experience', 'smoke', 'formal', 'resume']);
 
 export function parseRunOptions(args, root) {
   const options = { mode: 'debug', intent: null, list: false, help: false, files: [], native: [], selection: [], context: {}, rerun: null, caseDocs: [] };
+  // CLI 在 Windows 上常把相对路径传成反斜杠；项目内部、报告和批次
+  // 元数据统一使用 POSIX 相对路径，避免后续 sourceFingerprint/报告关联分叉。
+  const portablePath = (value) => value.replaceAll('\\', '/');
   let explicitMode = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -22,10 +25,10 @@ export function parseRunOptions(args, root) {
     else if (key === '--list') options.list = true;
     else if (key === '--mode') { options.mode = take(); explicitMode = true; }
     else if (key === '--intent') options.intent = take();
-    else if (key === '--case-doc') options.caseDocs.push(take());
+    else if (key === '--case-doc') options.caseDocs.push(portablePath(take()));
     else if (key === '--rerun') options.rerun = take();
     else if (key === '--module') {
-      const module = take();
+      const module = portablePath(take());
       if (!module.split('/').every((part) => part && !part.startsWith('_') && !part.includes('.') && !part.includes('\\'))) throw new Error('模块使用业务目录相对路径，不含 .、..、软链接或归档目录');
       options.files.push(`tests/${module}`);
     } else if (key === '--case-id') options.native.push('--tag', `case:${take()}`);
@@ -36,7 +39,7 @@ export function parseRunOptions(args, root) {
     } else if (values.has(key)) options.native.push(key, take());
     else if (switches.has(key) && equals < 0) options.native.push(key);
     else if (arg.startsWith('-')) throw new Error(`批次入口不支持 ${key}；复跑使用 --rerun，输出目录和配置由项目固定。其他诊断可使用原生 CLI。`);
-    else options.files.push(arg);
+    else options.files.push(portablePath(arg));
   }
   if (options.intent && !intents.has(options.intent)) throw new Error('--intent 只支持 experience / smoke / formal / resume');
   if (options.intent === 'formal') options.mode = 'formal';
@@ -52,13 +55,13 @@ export function parseRunOptions(args, root) {
   const scratchDir = normSep(resolve(root, 'scratch'));
   const testsDir = normSep(resolve(root, 'tests'));
   for (const file of options.files) {
-    const path = normSep(resolve(root, file.replace(/:\d+$/, '')));
+    const path = normSep(resolve(root, portablePath(file).replace(/:\d+$/, '')));
     if (path === scratchDir) throw new Error('用例范围须指定 scratch 中的具体文件或场景，不批量运行整个探索区');
     if (![testsDir, scratchDir].some((base) => path === base || path.startsWith(`${base}/`))) throw new Error('用例范围只能位于 e2e/tests 或 e2e/scratch');
-    if (file.replaceAll('\\', '/').split('/').some((part) => part.startsWith('_'))) throw new Error('归档、造数等 _ 前缀目录不属于活动测试');
+    if (portablePath(file).split('/').some((part) => part.startsWith('_'))) throw new Error('归档、造数等 _ 前缀目录不属于活动测试');
   }
   if (!options.files.length) options.files.push('tests/');
-  const includesScratch = options.files.some((file) => normSep(resolve(root, file)).startsWith(`${scratchDir}/`));
+  const includesScratch = options.files.some((file) => normSep(resolve(root, portablePath(file))).startsWith(`${scratchDir}/`));
   // 审核后的草稿也可正式执行；定稿入 tests 是后续独立动作。
   options.scratch = includesScratch;
   options.requiresIntent = Boolean(options.caseDocs.length || options.scratch);
