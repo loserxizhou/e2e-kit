@@ -10,5 +10,5 @@
     "allowJs": true,
     "esModuleInterop": true
   },
-  "include": ["e2e.config.ts", "tests/**/*.ts"]
+  "include": ["e2e.config.ts", "helpers/**/*.ts", "tests/**/*.ts"]
 }

@@ -219,6 +219,7 @@ const PAYLOAD = [
   ['docs/运行与结果管理.md.tpl', 'docs/运行与结果管理.md'],
   ['helpers/assistant-panel.ts.tpl', 'helpers/assistant-panel.ts'],
   ['helpers/auth-session.ts.tpl', 'helpers/auth-session.ts'],
+  ['helpers/business-evidence.ts.tpl', 'helpers/business-evidence.ts'],
   ['scripts/cases.mjs.tpl', 'scripts/cases.mjs'],
   ['scripts/check-case-doc.py.tpl', 'scripts/check-case-doc.py'],
   ['scripts/check-scope.mjs.tpl', 'scripts/check-scope.mjs'],

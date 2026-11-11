@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { caseId, inspectReport, renderBusinessSummary } from '../lib/case-report.mjs';
+import { businessResultKey, caseId, executionMode, inspectReport, renderBusinessSummary } from '../lib/case-report.mjs';
 import { classifyPath, inspectScope, onlyKnowledgeIndexChanged, parseChanges } from '../lib/scope.mjs';
 import { parseRunOptions } from '../lib/run-options.mjs';
 import { projectPath, writeJson } from '../lib/files.mjs';
@@ -75,6 +75,42 @@ test('摘要保留超时/未执行/中断，证据只引用安全的实际相对
   assert.match(text, /results\/case-a\/%E5%9B%BE%201%28%E6%96%B0%29.png/);
 });
 
+test('业务摘要展示本轮步骤、执行方式和可核对截图', (t) => {
+  const root = temporary(t);
+  const artifactsRoot = join(root, 'results');
+  const doc = report([result({ attempts: [{ id: 'attempt-a', index: 0, status: 'passed', steps: [
+    { cache: { mode: 'self-finalized' } },
+  ], artifacts: [{ kind: 'screenshot', path: 'test-a/business-confirm-card.png' }] }] })]);
+  const key = businessResultKey(doc.run.results[0]);
+  const step = { eventId: 'step-1', stepId: 'confirm-card', action: '发送创建请求', expected: '出现确认卡片' };
+  const text = renderBusinessSummary(doc, {
+    businessSteps: new Map([[key, [
+      { ...step, phase: 'start' },
+      { ...step, phase: 'finish', status: 'passed', actual: '确认卡片出现', durationMs: 420,
+        evidence: [join(artifactsRoot, 'test-a', 'business-confirm-card.png'), join(artifactsRoot, 'other-case.png')] },
+    ]]]),
+    outputRoot: root,
+    artifactsRoot,
+  });
+  assert.equal(executionMode(doc.run.results[0].attempts), 'replayed');
+  assert.equal(executionMode([{ steps: [{ cache: { mode: 'agent-concluded', replayedActions: 1, totalActions: 2 } }] }]), 'mixed');
+  assert.match(text, /\| replayed \|/);
+  assert.match(text, /### DOC-001 业务步骤/);
+  assert.match(text, /发送创建请求/);
+  assert.match(text, /确认卡片出现/);
+  assert.match(text, /results\/test-a\/business-confirm-card.png/);
+  assert.doesNotMatch(text, /other-case.png/);
+});
+
+test('未结束的业务步骤显示中断，不替业务用例补写通过', () => {
+  const key = businessResultKey(result());
+  const text = renderBusinessSummary(report(), {
+    businessSteps: new Map([[key, [{ eventId: 'step-1', phase: 'start', stepId: 'save', action: '保存文档', expected: '文档出现在列表' }]]]),
+  });
+  assert.match(text, /\| 保存文档 \| 文档出现在列表 \| 未收到步骤结束事件 \| 中断 \|/);
+  assert.match(text, /\| DOC-001 \|/);
+});
+
 test('原生参数原样传递，项目路径和输出边界不可被覆盖', () => {
   const options = parseRunOptions(['--module', '文档/创建', '--case-id', 'DOC-001', '--grep', '$(touch /tmp/unwanted)', '--headed'], '/project/e2e');
   assert.deepEqual(options.files, ['tests/文档/创建']);
@@ -136,9 +172,19 @@ test('批次文件拒绝写出项目；Reporter 交付与原始报告相互独�
   const file = join(output, 'report.json');
   const doc = report();
   writeJson(root, file, doc);
-  await businessReporter().onRunFinished({ report: doc, reportPath: file, projectRoot: root }, new AbortController().signal);
+  const reporter = businessReporter();
+  const event = { type: 'output', target: 'web', pair: { testId: 'test-a', agent: 'default', repeat: 0 }, stream: 'stdout' };
+  const step = { schemaVersion: 'business-step-1', eventId: 'step-1', phase: 'finish', status: 'passed', startedAt: new Date().toISOString(), stepId: 'submit', action: '提交', expected: '出现成功提示', actual: '出现成功提示' };
+  const outputLine = '[E2E_BUSINESS_STEP]' + JSON.stringify(step) + '\n';
+  reporter.onEvent({ ...event, text: '[E2E_BUSINESS_STEP]invalid\n' + outputLine.slice(0, 35) });
+  reporter.onEvent({ ...event, target: 'other', text: outputLine.replaceAll('出现成功提示', '其他目标') });
+  reporter.onEvent({ ...event, text: outputLine.slice(35) });
+  await reporter.onRunFinished({ report: doc, reportPath: file, projectRoot: root, artifactsRoot: join(output, 'results') }, new AbortController().signal);
   assert.deepEqual(JSON.parse(readFileSync(file)), doc);
   assert.equal(JSON.parse(readFileSync(join(output, 'business-delivery.json'))).status, 'complete');
+  const summary = readFileSync(join(output, '业务摘要.md'), 'utf8');
+  assert.match(summary, /### DOC-001 业务步骤/);
+  assert.doesNotMatch(summary, /其他目标/);
   const bad = report([result({ tags: ['case:A1', 'case:B1'] })]);
   await assert.rejects(() => businessReporter().onRunFinished({ report: bad, reportPath: file, projectRoot: root }, new AbortController().signal));
   assert.equal(JSON.parse(readFileSync(join(output, 'business-delivery.json'))).status, 'failed');
@@ -148,26 +194,43 @@ test('批次文件拒绝写出项目；Reporter 交付与原始报告相互独�
 test('真实原生运行器生成报告、串行尝试和 Reporter 产物（无 engine/浏览器）', async (t) => {
   const root = temporary(t);
   const sdk = new URL('../../node_modules/e2e/dist/index.js', import.meta.url);
+  const helper = new URL('../../helpers/business-evidence.ts', import.meta.url);
   const { run } = await import('e2e/runner');
   const folder = join(root, 'tests/工具/原生集成');
   mkdirSync(folder, { recursive: true });
+  const reporter = new URL('../reporters/business.mjs', import.meta.url);
+  writeFileSync(join(root, 'e2e.config.ts'), `import { businessReporter } from ${JSON.stringify(reporter.href)};
+export default { targets: [{ name: 'tools', platform: 'web' }], workers: 1, reporters: ['markdown', businessReporter()] };`);
   writeFileSync(join(folder, '原生集成.e2e.ts'), `import { test, describe, expect } from ${JSON.stringify(sdk.href)};
-test('确定性通过', { tags: ['case:CORE-001'] }, async () => { expect(1).toBe(1); });
-test('确定性失败', { tags: ['case:CORE-002'] }, async () => { expect(1).toBe(2); });
+import { businessStep } from ${JSON.stringify(helper.href)};
+const app = { screenshot: async () => { throw new Error('截图不可用'); } };
+test('确定性通过', { tags: ['case:CORE-001'] }, async () => {
+  await businessStep(app, { id: 'count', action: '检查记录数', expected: '有 1 条' }, () => {
+    expect(1).toBe(1);
+    return { actual: '本轮有 1 条' };
+  });
+});
+test('确定性失败', { tags: ['case:CORE-002'], retries: 1 }, async () => {
+  await businessStep(app, { id: 'count', action: '检查记录数', expected: '有 2 条' }, () => { expect(1).toBe(2); });
+});
 describe('串行组', { serial: true }, () => {
   test('串行成员', { tags: ['case:CORE-003'] }, async () => { expect(true).toBe(true); });
 });
 `);
-  const outcome = await run({ cwd: root, config: {
-    targets: [{ name: 'tools', platform: 'web' }], workers: 1, reporters: ['markdown', businessReporter()],
-  } });
+  const outcome = await run({ cwd: root, config: 'e2e.config.ts' });
   assert.equal(outcome.exitCode, 1);
   const view = inspectReport(outcome.report, { requireCaseIds: true });
   assert.equal(view.records.length, 3);
   assert.equal(view.records.filter((r) => r.result.status === 'failed').length, 1);
+  const failed = view.records.find((r) => r.id === 'CORE-002');
+  assert.equal(failed.attempts.length, 2);
+  assert.ok(failed.attempts.every((attempt) => attempt.error.code === 'ASSERTION_FAILED'));
   assert.equal(view.records.find((r) => r.id === 'CORE-003').attempts.length, 1);
   assert.equal(JSON.parse(readFileSync(join(root, '.e2e/business-delivery.json'))).status, 'complete');
-  assert.match(readFileSync(join(root, '.e2e/业务摘要.md'), 'utf8'), /CORE-002/);
+  const summary = readFileSync(join(root, '.e2e/业务摘要.md'), 'utf8');
+  assert.match(summary, /本轮有 1 条/);
+  assert.match(summary, /\| 1 \| count \| 检查记录数 \| 有 2 条 \| .* \| 失败 \|/);
+  assert.match(summary, /\| 2 \| count \| 检查记录数 \| 有 2 条 \| .* \| 失败 \|/);
 });
 
 test('Excel 校验器按业务编号关联报告，兼容未编号旧用例', () => {

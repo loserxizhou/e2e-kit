@@ -39,6 +39,7 @@ test('fresh init: 生成骨架、.env 权限 0600、二次运行零写入', () =
   assert.ok(existsSync(join(project, 'e2e', 'e2e.config.ts')));
   assert.ok(existsSync(join(project, 'e2e', 'tests', 'login.e2e.ts')));
   assert.ok(existsSync(join(project, 'e2e', 'tests', 'auth.setup.e2e.ts')));
+  assert.ok(existsSync(join(project, 'e2e', 'helpers', 'business-evidence.ts')));
   assert.ok(existsSync(join(project, 'e2e', 'tsconfig.json')), '应生成 tsconfig');
   assert.ok(existsSync(join(project, 'e2e', 'scripts', 'forward-test-env.mjs')), '应生成内网转发脚本');
   assert.ok(existsSync(join(project, 'e2e', 'scripts', 'check-case-doc.py')), '应用例文档自检脚本');
@@ -50,7 +51,7 @@ test('fresh init: 生成骨架、.env 权限 0600、二次运行零写入', () =
   assert.ok(existsSync(join(project, 'e2e', 'scripts', 'cases.mjs')), '应用例文档工作流入口');
   assert.ok(existsSync(join(project, 'e2e', 'templates', '用例初稿示例.json')), '应生成初稿示例');
   assert.ok(existsSync(join(project, 'e2e', 'package-lock.json')), '应生成锁文件');
-  assert.equal(first.json.created.length, 42, '应生成 41 个框架文件 + .env');
+  assert.equal(first.json.created.length, 43, '应生成 42 个框架文件 + .env');
   assert.ok(!existsSync(join(project, 'e2e', 'knowledge')), '团队知识库不应随 kit 生成');
   const pkg = JSON.parse(readFileSync(join(project, 'e2e', 'package.json'), 'utf8'));
   assert.ok(pkg.scripts.forward, 'package.json 应带 forward 脚本');

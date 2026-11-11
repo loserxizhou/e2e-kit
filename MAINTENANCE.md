@@ -34,7 +34,7 @@ git add templates && git commit && git push
 
 ### 与源仓库同步的其余锚点
 
-- `bin/init.mjs` 的 `PAYLOAD` 清单（41 项映射）与 `templates/` 一一对应：源仓库新增/删除框架文件时，先跑 refresh，再同步改 PAYLOAD 与 `E2E_VERSION`/`WEB_VERSION` 常量；
+- `bin/init.mjs` 的 `PAYLOAD` 清单（42 项映射）与 `templates/` 一一对应：源仓库新增/删除框架文件时，先跑 refresh，再同步改 PAYLOAD 与 `E2E_VERSION`/`WEB_VERSION` 常量；
 - `bin/e2e-mcp.mjs` 的 `DEFAULT_E2E_VERSION`；
 - `skills/e2e-kit/SKILL.md` 的入口命令示例。
 
@@ -67,6 +67,6 @@ git add templates && git commit && git push
 
 ## 版本与发布
 
-- 本 kit 版本：`package.json` 的 `version`（当前 0.2.0），分发的工作流版本见 payload `eofficeWorkflowVersion` 与 `templates/docs/版本与变更记录.md.tpl`；
+- 本 kit 版本：`package.json` 的 `version`（当前 0.3.0），分发的工作流版本见 payload `eofficeWorkflowVersion` 与 `templates/docs/版本与变更记录.md.tpl`；
 - 发布 = 提交并推送 main；同事侧通过 `git pull` + `e2e-kit upgrade` 获得更新；
 - 发布前检查：`npm test` 全绿、`node tools/refresh-from-source.mjs` 门禁通过、全仓库脱敏 grep 零命中。

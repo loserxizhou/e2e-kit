@@ -42,7 +42,7 @@ test('upgrade 幂等：init 后立即升级，全部已最新、零写入', () =
   assert.equal(upgraded.res.status, 0, upgraded.stderr);
   assert.deepEqual(upgraded.json.created, []);
   assert.deepEqual(upgraded.json.updated, []);
-  assert.equal(upgraded.json.unchanged.length, 41, '41 个框架文件应全部已最新');
+  assert.equal(upgraded.json.unchanged.length, 42, '42 个框架文件应全部已最新');
   assert.deepEqual(upgraded.json.skipped, []);
 });
 

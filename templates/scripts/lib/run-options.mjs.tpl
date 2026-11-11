@@ -47,14 +47,18 @@ export function parseRunOptions(args, root) {
   if (options.rerun && !/^[0-9]{8}T[0-9]{6}Z-[a-f0-9-]{36}$/.test(options.rerun)) throw new Error('--rerun 须填写已有批次编号');
   if (options.intent === 'resume' && !options.rerun) throw new Error('继续上次批次须同时指定 --rerun 批次编号');
   if (options.rerun && options.intent !== 'resume') throw new Error('指定 --rerun 时执行意图必须选择 resume');
+  // Windows 下 resolve 返回反斜杠路径，前缀比较前先归一化为正斜杠，避免范围校验误判
+  const normSep = (p) => p.replaceAll('\\', '/');
+  const scratchDir = normSep(resolve(root, 'scratch'));
+  const testsDir = normSep(resolve(root, 'tests'));
   for (const file of options.files) {
-    const path = resolve(root, file.replace(/:\d+$/, ''));
-    if (path === resolve(root, 'scratch')) throw new Error('用例范围须指定 scratch 中的具体文件或场景，不批量运行整个探索区');
-    if (![resolve(root, 'tests'), resolve(root, 'scratch')].some((base) => path === base || path.startsWith(`${base}/`))) throw new Error('用例范围只能位于 e2e/tests 或 e2e/scratch');
+    const path = normSep(resolve(root, file.replace(/:\d+$/, '')));
+    if (path === scratchDir) throw new Error('用例范围须指定 scratch 中的具体文件或场景，不批量运行整个探索区');
+    if (![testsDir, scratchDir].some((base) => path === base || path.startsWith(`${base}/`))) throw new Error('用例范围只能位于 e2e/tests 或 e2e/scratch');
     if (file.replaceAll('\\', '/').split('/').some((part) => part.startsWith('_'))) throw new Error('归档、造数等 _ 前缀目录不属于活动测试');
   }
   if (!options.files.length) options.files.push('tests/');
-  const includesScratch = options.files.some((file) => resolve(root, file).startsWith(`${resolve(root, 'scratch')}/`));
+  const includesScratch = options.files.some((file) => normSep(resolve(root, file)).startsWith(`${scratchDir}/`));
   // 审核后的草稿也可正式执行；定稿入 tests 是后续独立动作。
   options.scratch = includesScratch;
   options.requiresIntent = Boolean(options.caseDocs.length || options.scratch);

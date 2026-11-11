@@ -5,6 +5,8 @@
 // 2) is_draft 是必填参数，提问必须写明「保存为草稿」或「直接发布」。
 // 3) 等待本轮结束用「内容由AI生成」脚注计数增量，不能用文本长度稳定。
 
+import { expect } from 'e2e';
+
 export async function openAssistant(app: any, browser: any) {
   await app.open('./');
   await expectNode(browser.locator('text=全部应用').first(), 60_000);
@@ -13,34 +15,32 @@ export async function openAssistant(app: any, browser: any) {
 }
 
 async function expectNode(locator: any, timeout: number) {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    const n = await locator.count();
-    if (n > 0) return;
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error('节点未出现');
+  await locator.waitFor({ state: 'visible', timeout });
 }
 
-async function waitTurn(browser: any, before: string, waitMs: number) {
+async function waitTurn(browser: any, before: string, waitMs: number, question?: string) {
   const dialog = browser.locator('[role=dialog]');
   const beforeFooter = (before.match(/内容由AI生成/g) || []).length;
-  const deadline = Date.now() + waitMs;
+  const addedText = (text: string) => {
+    if (text.startsWith(before)) return text.slice(before.length);
+    const questionAt = question ? text.lastIndexOf(question) : -1;
+    return question && questionAt >= 0 ? text.slice(questionAt + question.length) : '';
+  };
+  let stopSeen = false;
   let text = before;
-  let lastLen = -1;
-  let stable = 0;
-  while (Date.now() < deadline) {
+  await expect.poll(async () => {
     text = (await dialog.textContent()) ?? '';
-    if (text.includes('上下文长度') || text.includes('额度已用尽')) break;
+    const delta = addedText(text);
+    if (delta.includes('上下文长度') || delta.includes('额度已用尽')) return 'blocked';
     const footerCount = (text.match(/内容由AI生成/g) || []).length;
-    if (footerCount > beforeFooter && text.length > before.length + 5) break;
-    if (text.length === lastLen) stable += 1; else { stable = 0; lastLen = text.length; }
-    if (stable >= 5 && text.length > before.length + 5) break;
-    await new Promise((r) => setTimeout(r, 2_000));
-  }
-  await new Promise((r) => setTimeout(r, 1_500));
-  text = (await dialog.textContent()) ?? '';
-  return { delta: text.slice(before.length), full: text, tail: text.slice(-1600) };
+    if (footerCount > beforeFooter) return 'done';
+    const stopping = await dialog.getByRole('button', '停止生成').first().isVisible();
+    stopSeen ||= stopping;
+    if (stopSeen && !stopping && await dialog.getByRole('button', '发送').first().isVisible()) return 'done';
+    return 'pending';
+  }, { timeout: waitMs, interval: 250, message: '智能办公本轮未完成' }).toMatch(/^(done|blocked)$/);
+  const delta = addedText(text);
+  return { delta, full: text, tail: text.slice(-1600) };
 }
 
 export async function ask(browser: any, question: string, waitMs = 120_000, preserveSkill = false) {
@@ -56,7 +56,7 @@ export async function ask(browser: any, question: string, waitMs = 120_000, pres
     await input.fill(question);
   }
   await dialog.getByRole('button', '发送').click();
-  const r = await waitTurn(browser, before, waitMs);
+  const r = await waitTurn(browser, before, waitMs, question);
   return { ...r, before };
 }
 
@@ -98,7 +98,7 @@ export async function cancelCard(browser: any) {
       const btn = dialog.getByRole('button', name).first();
       if (await btn.count()) {
         await btn.click();
-        await new Promise((r) => setTimeout(r, 2_000));
+        await btn.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => undefined);
         const after = (await dialog.textContent()) ?? '';
         return after.slice(-300);
       }

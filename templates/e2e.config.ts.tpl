@@ -14,9 +14,16 @@ try {
   // .env 不存在时继续，由下方的必填项检查给出明确报错
 }
 
-const required = ['APP_URL', 'EOFFICE_ADMIN_USER', 'EOFFICE_ADMIN_PASSWORD'];
+// 账号变量名：新版统一为 EOFFICE_ADMIN_*，这里保留旧名 E2E_* 的兜底，
+// 便于 .env 尚未迁移的机器继续运行（迁移提示见 e2e/README.md）。
+const adminUser = process.env.EOFFICE_ADMIN_USER || process.env.E2E_USER || '';
+const adminPassword = process.env.EOFFICE_ADMIN_PASSWORD || process.env.E2E_PASSWORD || '';
+
+const required = ['APP_URL'];
 if (process.env.AI_API_KEY) required.push('AI_PROVIDER', 'AI_MODEL', 'AI_BASE_URL');
 const missing = required.filter((k) => !process.env[k]?.trim());
+if (!adminUser) missing.push('EOFFICE_ADMIN_USER');
+if (!adminPassword) missing.push('EOFFICE_ADMIN_PASSWORD');
 if (missing.length) {
   throw new Error(
     `e2e 配置缺失：${missing.join('、')}。请复制 e2e/.env.example 为 e2e/.env 并填写（被测地址、测试账号、模型配置全部在 .env 中）。`,
@@ -24,9 +31,8 @@ if (missing.length) {
 }
 
 // agent 步骤的模型，按 .env 的 AI_PROVIDER 选协议：
-//   anthropic        —— Anthropic Messages 协议（智谱 /api/anthropic、Claude 官方）
-//   openai-compatible —— OpenAI Chat Completions 协议（DeepSeek、Kimi、Qwen、
-//                        智谱 /api/paas/v4、Ollama/vLLM 本地模型等）
+//   anthropic        —— Anthropic Messages 协议（Claude 官方及兼容网关）
+//   openai-compatible —— OpenAI Chat Completions 协议（DeepSeek、Kimi、Qwen、本地 Ollama 等）
 // 不含 agent 步骤的测试不需要模型，未配置 AI_API_KEY 时也能加载和运行。
 function buildAgentModel() {
   const baseURL = process.env.AI_BASE_URL!;
@@ -87,16 +93,27 @@ const base = {
   reporters: ['list', 'markdown', 'junit', businessReporter()],
   credentials: {
     admin: {
-      username: process.env.EOFFICE_ADMIN_USER!,
+      username: adminUser,
       // 函数形式惰性求值：只在真正填密码时读取，明文不进代码与报告
-      password: () => process.env.EOFFICE_ADMIN_PASSWORD ?? '',
+      password: () => adminPassword,
+    },
+    // 特权账号：入库记录删除等操作只有 admin 才放行（前端 allowButtons 里写死 user_id === 'admin'）。
+    // 未单独配置时用户名退回默认 admin，避免既有用例（特权业务记录删除等）因缺 session 直接失败。
+    adminRoot: {
+      username: process.env.E2E_ADMIN_USER || 'admin',
+      password: () => process.env.E2E_ADMIN_PASSWORD ?? '',
     },
   },
   // 本地 dev server 与 AI 后端都是单实例，串行跑避免并发把环境压垮
   workers: 1,
+  // 本机正式回归明确启用动作回放；页面或定位器变化时由框架自动回到
+  // live agent，并在业务摘要中标出 replayed / mixed / live。
+  cache: { dir: '.e2e/cache' }, // 本机读写，CI 沿用框架默认的只读策略。
   targets: [
     {
-      engine: web(),
+      // e-office 是企业级桌面 SPA：1280x720 下日志中心左侧模块树会折叠，
+      // 「业务模块」等二级节点不渲染。用真实桌面尺寸，用例才能按用户实际操作路径走。
+      engine: web({ viewport: { width: 1920, height: 1080 } }),
       app: {
         url: resolveAppUrl(process.env.APP_URL!),
       },

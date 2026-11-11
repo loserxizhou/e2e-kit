@@ -18,7 +18,7 @@ const TEMPLATES_DIR = join(KIT_ROOT, 'templates');
 const HAND_MAINTAINED = new Set(['readme.md.tpl', 'env.example.tpl', 'agents-route.md']);
 
 // 不随 kit 分发的内部内容（相对源仓库 e2e/ 目录）。
-const PRUNE = ['tests/办公用品', 'knowledge', 'docs/办公用品接管清单.md'];
+const PRUNE = ['tests/办公用品', 'knowledge', 'docs/办公用品接管清单.md', '怎么指挥AI跑测试.md'];
 
 // 源文件 → 模板名。未列出的文件一律 `<相对路径>.tpl`。
 const RENAME = new Map([
@@ -51,28 +51,17 @@ const GLOBAL_TRANSFORMS = [
   { find: 'Codex / ZCode / Claude Code 等', replace: 'Codex / Claude Code 等', critical: true },
   { find: '上海时间', replace: '东八区时间', critical: true },
   { find: '本地 ng serve + MAMP + AI 后端都是单实例', replace: '本地 dev server 与 AI 后端都是单实例' },
+  { find: '仓储日志', replace: '特权业务记录' },
+  { find: '仓储管理', replace: '业务模块' },
 ];
 
 /** 按源文件（相对 e2e/）追加的精准改写。 */
 const FILE_TRANSFORMS = {
-  'scripts/forward-test-env.mjs': [
-    {
-      find: "// 用法：node scripts/forward-test-env.mjs [本机端口 目标IP 目标端口]\n// 默认：8010 192.0.2.10 8010（跑测试期间保持运行，Ctrl+C 停止并清除登记）",
-      replace: "// 用法：node scripts/forward-test-env.mjs [本机端口] <目标IP> [目标端口]；目标 IP 必填\n// 示例：node scripts/forward-test-env.mjs 8010 192.0.2.10 8010（跑测试期间保持运行，Ctrl+C 停止并清除登记）",
-      critical: true,
-    },
-    {
-      find: "const [listenPortArg, targetHost, targetPortArg] = process.argv.slice(2);\nconst listenPort = Number(listenPortArg ?? 8010);\nconst targetPort = Number(targetPortArg ?? 8010);\nconst host = targetHost ?? '192.0.2.10';",
-      replace: "const [listenPortArg, targetHost, targetPortArg] = process.argv.slice(2);\nif (!targetHost) {\n  console.error('用法：node scripts/forward-test-env.mjs [本机端口] <目标IP> [目标端口]；目标 IP 必填');\n  process.exit(1);\n}\nconst listenPort = Number(listenPortArg ?? 8010);\nconst targetPort = Number(targetPortArg ?? 8010);\nconst host = targetHost;",
-      critical: true,
-    },
-  ],
   'package.json': [
     { find: '"e2e": "0.22.0"', replace: '"e2e": "{{E2E_VERSION}}"', critical: true },
     { find: '"@e2e-dev/web": "0.15.4"', replace: '"@e2e-dev/web": "{{WEB_VERSION}}"', critical: true },
   ],
   'docs/运行与结果管理.md': [
-    { find: '当前 `tests/` 已有示例模块存量模块，仍需按接管清单迁移；', replace: '', critical: true },
     {
       find: '2026-11-02 核对 npm 官方 registry 与 GitHub releases 后升级为 e2e 0.22.0 / Web 0.15.4；框架已内含修复后的 Zod 4.6.7，无需保留临时 override。填密后模型截图规则随版本变化，参见 README；现有接口登录保持原样。新增类型检查依赖随锁文件分发，新机器执行 `npm ci`。项目规范仍通过 Git 更新，现有 kit/Skill 已能读取 README，无需重发 kit 或修改本机 Skill；本轮未重发分发包。',
       replace: '框架与依赖版本由锁文件固定，新机器在 e2e 目录执行 `npm ci`；填密后模型截图规则随版本变化，参见 README。',
@@ -105,21 +94,8 @@ const FILE_TRANSFORMS = {
       replace: '**配套 kit 按需维护**：本模板、生成入口和校验脚本属于框架文件，由 e2e-kit 统一升级；日常用例、结果回填和执行细则在项目内维护。初始化只补缺，升级不覆盖项目内手改过的文件。',
     },
   ],
-  'docs/怎么指挥AI跑测试.md': [
-    {
-      find: '**收到升级通知时**：先结束正在运行的测试并关闭活跃 MCP 会话，拉取最新 Git 代码，然后在 `e2e` 目录执行 `npm ci`、`npm run sync`，最后重启客户端。可直接对 AI 说：「按 README 的已安装电脑升级流程同步本机，保留我的环境配置和草稿。」已有 e2e-kit Skill 不需要重装；官方 e2e Skill 由同步命令更新。WorkBuddy / ZCode / DSH 等客户端按同步命令输出的 MCP 片段更新接入，详细说明见 [README](../README.md#已安装电脑升级团队通过-git-分发)。',
-      replace: '**收到升级通知时**：先结束正在运行的测试并关闭活跃 MCP 会话，运行 `e2e-kit upgrade` 刷新框架文件（手改过的文件会被跳过并列出），然后在 e2e 目录执行 `npm ci`、`npm run sync`，最后重启客户端。可直接对 AI 说：「按 e2e-kit 升级流程同步本机，保留我的环境配置和草稿。」',
-      critical: true,
-    },
-  ],
-  'docs/版本与变更记录.md': [
-    {
-      find: /### 迁移提示\n\n[\s\S]*?(?=\n## AI 使用口径)/,
-      replace: '',
-      regex: true,
-      critical: true,
-    },
-  ],
+  'docs/怎么指挥AI跑测试.md': [],
+  'docs/版本与变更记录.md': [],
 };
 
 // docs/ 与 templates/ 里的项目内路径统一模板化：e2e/<子路径> → {{DIR}}/<子路径>，以及 cd e2e &&。

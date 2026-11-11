@@ -2,7 +2,7 @@
 
 e-office e2e 测试一键接入工具包：**一条命令完成项目初始化 + 客户端 MCP/Skill 配置**，之后全部用自然语言让 agent 干活；框架升级不覆盖手改文件。
 
-基于 [tester-army/e2e](https://github.com/tester-army/e2e)（自然语言测试目标 + AI agent 驱动页面操作 + 传统定位器断言兜底）。当前分发的工作流版本 `0.3.0`（e2e `0.22.0` / Web `0.15.4`）。
+基于 [tester-army/e2e](https://github.com/tester-army/e2e)（自然语言测试目标 + AI agent 驱动页面操作 + 传统定位器断言兜底）。当前分发的工作流版本 `0.4.0`（e2e `0.22.0` / Web `0.15.4`）。
 
 ## 快速开始
 
@@ -21,7 +21,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/loserxizhou/e2e-kit/main/run
 初始化会自动：
 
 1. 检查 Node ≥ 22.22.3；
-2. 生成 `e2e/` 目录（config、`.env`、运行脚本、模板、docs、冒烟用例，共 41 个框架文件）；
+2. 生成 `e2e/` 目录（config、`.env`、运行脚本、模板、docs、冒烟用例，共 42 个框架文件）；
 3. 写该客户端的项目级 MCP 配置与 skill；
 4. `npm ci` 安装依赖、装 Chromium、跑冒烟；
 5. 打印结果与下一步。
@@ -114,7 +114,7 @@ E2E_INIT_PASSWORD='***' bash run.sh --client codex --yes \
 │   ├── e2e-mcp.mjs     # MCP 包装器（定位项目后启动 e2e mcp）
 │   └── lib/            # locate / prompt / util / kit
 ├── skills/e2e-kit/     # 随包 skill
-├── templates/          # 项目框架模板（41 个 payload + AGENTS 路由块）
+├── templates/          # 项目框架模板（42 个 payload + AGENTS 路由块）
 ├── tools/              # 维护工具：refresh-from-source.mjs（从源仓库刷新模板）
 ├── test/               # node:test 行为测试
 └── MAINTENANCE.md      # 维护者手册：模板刷新流程与脱敏清单

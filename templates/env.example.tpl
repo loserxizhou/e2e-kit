@@ -13,6 +13,8 @@ APP_URL=http://localhost:4200/
 # [必填] 测试账号（auth.setup 用它登录并保存 session 'admin'）
 EOFFICE_ADMIN_USER=admin
 EOFFICE_ADMIN_PASSWORD=填写测试账号密码
+# 如需通过登录页准备 admin 会话，可设为 ui：
+# EOFFICE_E2E_LOGIN_MODE=ui
 
 # [选填] 本机测试人员姓名：AI 生成 Excel 用例文档时的默认「创建人」署名；
 # 未配置时 AI 会先询问。多人共用机器时以实际创建人为准。

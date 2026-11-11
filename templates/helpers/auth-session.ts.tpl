@@ -6,8 +6,8 @@ type LoginData = Record<string, any>;
 /** 通过正式认证接口初始化登录态，避免在页面填入 Secret 后丢失失败截图。 */
 export async function initializeAdminSession(browser: Browser, appBaseUrl: string | undefined): Promise<void> {
   if (!appBaseUrl) throw new Error('登录准备缺少被测应用地址');
-  const userAccount = process.env.E2E_USER_ADMIN_USERNAME ?? process.env.EOFFICE_ADMIN_USER;
-  const password = process.env.E2E_USER_ADMIN_PASSWORD ?? process.env.EOFFICE_ADMIN_PASSWORD;
+  const userAccount = process.env.E2E_USER_ADMIN_USERNAME ?? (process.env.EOFFICE_ADMIN_USER || process.env.E2E_USER);
+  const password = process.env.E2E_USER_ADMIN_PASSWORD ?? (process.env.EOFFICE_ADMIN_PASSWORD || process.env.E2E_PASSWORD);
   if (!userAccount || !password) throw new Error('登录准备缺少测试账号或密码');
 
   // 只在 Node 端读取应用入口的 base href，不在浏览器加载未认证的应用。

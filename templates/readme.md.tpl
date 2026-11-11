@@ -1,6 +1,6 @@
 # {{PROJECT_NAME}} e2e 测试
 
-**项目工作流版本：`0.3.0`** · **底层 e2e：`{{E2E_VERSION}}` / Web `{{WEB_VERSION}}`**
+**项目工作流版本：`0.4.0`** · **底层 e2e：`{{E2E_VERSION}}` / Web `{{WEB_VERSION}}`**
 AI 开始任何测试任务前，先读取[版本与变更记录](docs/版本与变更记录.md)，再读取[维护与提交标准](docs/维护与提交标准.md)和[Excel 用例工作流](docs/Excel用例工作流.md)。项目工作流版本和底层框架版本分别管理，不能把其中一个当成另一个。
 
 基于 [tester-army/e2e](https://github.com/tester-army/e2e)：自然语言描述测试目标 + AI agent 驱动页面操作 + 传统定位器断言兜底；不含 agent 步骤的测试完全不需要模型。
@@ -39,6 +39,7 @@ Excel 是业务标准的审核入口，脚本承载执行；业务变化须重�
 | --- | --- | --- |
 | `APP_URL` | ✅ | 被测前端「应用根」地址，**必须以 `/` 结尾** |
 | `EOFFICE_ADMIN_USER` / `EOFFICE_ADMIN_PASSWORD` | ✅ | 测试账号（auth.setup 用它登录并保存 session 'admin'） |
+| `EOFFICE_E2E_LOGIN_MODE` | 否 | 默认通过同源接口准备 admin 会话；需走原登录页时设为 `ui` |
 | `EOFFICE_TESTER_NAME` | 否 | 本机测试人员姓名，AI 生成 Excel 时的默认「创建人」署名 |
 | `AI_PROVIDER` / `AI_BASE_URL` / `AI_MODEL` / `AI_API_KEY` | 否 | agent 步骤用；不配则 agent 用例自动跳过，回归库照常运行 |
 
