@@ -66,7 +66,7 @@ node bin/e2e-kit.mjs upgrade --project <你的项目> --migration safe --yes
 node bin/e2e-kit.mjs upgrade --project <你的项目> --migration adopt --yes
 ```
 
-升级同时按同一迁移模式刷新项目内的 `e2e-kit` Skill；Skill 被手改或来源不明时，`safe` 会保留并提示，`adopt` 才会接管。若项目使用 DSH，请显式传 `--client dsh`，因为它与 Codex 共用 `.agents/skills/e2e-kit/` 路径。
+升级默认只迁移项目框架文件，不刷新项目内的 `e2e-kit` Skill。需要刷新 Skill 时显式传 `--refresh-skill --client <客户端>`；Skill 被手改或来源不明时，`safe` 会保留并提示，`adopt` 才会接管。若项目使用 DSH，请显式传 `--client dsh`，因为它与 Codex 共用 `.agents/skills/e2e-kit/` 路径。
 
 ## 常用命令
 
@@ -74,7 +74,8 @@ node bin/e2e-kit.mjs upgrade --project <你的项目> --migration adopt --yes
 bash run.sh                                   # 初始化/补缺（客户端自动探测）
 bash run.sh --client workbuddy,zcode          # 显式指定客户端（探测不到的），逗号分隔多选
 bash run.sh --update                          # 强制更新 ~/.e2e-kit 里的 kit 副本
-  node bin/e2e-kit.mjs upgrade --project .      # 交互选择 safe/adopt 后升级框架与 Skill
+  node bin/e2e-kit.mjs upgrade --project .      # 交互选择 safe/adopt 后只迁移项目框架
+  node bin/e2e-kit.mjs upgrade --project . --refresh-skill --client codex  # 显式刷新 Skill/MCP
 node bin/e2e-kit.mjs doctor --project .       # 体检（只读，不改文件）
 node bin/e2e-kit.mjs init --help              # 所有初始化参数
 ```

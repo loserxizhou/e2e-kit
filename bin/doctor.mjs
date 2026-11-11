@@ -136,7 +136,7 @@ export function runDoctor(argv) {
     const currentHash = sha256(readText(join(projectRoot, installedSkill, 'SKILL.md')));
     const sourceHash = sha256(readText(join(SKILLS_DIR, 'e2e-kit', 'SKILL.md')));
     if (currentHash === sourceHash) add('ok', 'e2e-kit Skill 版本', '与当前 kit 一致');
-    else add('warn', 'e2e-kit Skill 版本', '项目内 Skill 与当前 kit 不一致；升级时选择 adopt 才会接管来源不明或手改版本');
+    else add('warn', 'e2e-kit Skill 版本', '项目内 Skill 与当前 kit 不一致；日常不需处理，明确刷新时使用 --refresh-skill --client，并按 safe/adopt 选择是否接管');
   }
 
   const mcpFiles = ['.mcp.json', '.codex/config.toml', '.cursor/mcp.json'];

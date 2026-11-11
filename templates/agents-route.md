@@ -6,6 +6,6 @@
 - 写用例前先实探页面（e2e MCP 或浏览器），禁止凭猜测写选择器；新用例先落在 `{{DIR}}/scratch/`，定稿后按同构路径挪入 `{{DIR}}/tests/`；测试沉淀的避坑/经验/机制类文档统一入 `{{DIR}}/knowledge/`（目录名用英文）。
 - 改断言标准必须由用户确认；允许直接修定位器、等待这类技术细节，但不得为了让用例变绿而放宽标准。
 - 测试任务先读 `{{DIR}}/docs/维护与提交标准.md`；helper 先复用，简单步骤直接写用例，必要时才建立场景 helper 并随场景定稿，业务断言留在用例。项目内的 e2e 核心由项目 Git 和维护者维护，日常测试不得修改公共 helper、运行配置或框架文件，也不需要更新 Skill；只有明确的框架迁移才使用 e2e-kit。
-- 生成或修改用例 Excel 前读取 `{{DIR}}/templates/测试用例文档格式.md`；固定说明、16 列明细、账号矩阵、测试数据、造数核验；权限测试增加能力权限矩阵。首次生成统一走 `npm run test:cases -- draft <json> --output <xlsx>`；设计初稿用 `python3 {{DIR}}/scripts/check-case-doc.py <xlsx> --draft` 自检，执行结果用 `python3 {{DIR}}/scripts/check-case-doc.py <xlsx> <本批次report.json>` 自检到 0 error。
+- 生成或修改用例 Excel 前读取 `{{DIR}}/templates/测试用例文档格式.md`；固定说明、16 列明细、账号矩阵、测试数据、造数核验；权限测试增加能力权限矩阵。首次生成统一走 `npm run test:cases -- draft <json> --output <xlsx>`；设计初稿和执行结果使用 `E2E_PYTHON` 指定的 Python（Windows 通常为 `python`，macOS/Linux 通常为 `python3`）运行 `check-case-doc.py`，自检到 0 error。
 - 换库后按测试数据页的方法重新准备并核验，更新实际 ID 和证据；复跑/重试前检查前置条件，符合则复用，状态已消耗则优先另造。运行后默认保留；确需清理先列明环境、具体记录 ID、归属、原因及关联影响，得到用户确认后再处理。执行存量脚本前检查未确认的自动清理步骤；被测删除操作按已确认验收意图执行。详细口径见用例文档模板「换库、复跑与删除确认」。
 - 正式执行统一入口：`cd {{DIR}} && npm run test:run -- <tests或scratch具体范围> --case-doc <已审核xlsx>`（多份文档重复参数）。测试人员说「跑一下/跑一遍」时先展示执行意图：experience 体验流程、smoke 冒烟验证、formal 正式执行、resume 继续上次批次；`scratch` 或绑定 Excel 缺少 `--intent` 时入口拒绝启动。先 `--list` 再执行；无 Excel 的兼容入口及原生 `npx e2e run` 留作诊断。

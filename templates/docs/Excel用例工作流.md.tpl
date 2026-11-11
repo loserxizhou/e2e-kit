@@ -24,6 +24,8 @@ npm run test:cases -- inspect 'tests/示例模块/用例文档/实际文件.xlsx
 python3 scripts/check-case-doc.py 'exports/模块/用例.xlsx' --draft
 ```
 
+Windows 使用 `python`；也可以设置 `E2E_PYTHON` 为本机 Python 的完整路径。macOS/Linux 默认使用 `python3`。
+
 表格准备页仍须完整；未知实际 ID、核验状态按模板写待准备/未执行，不编造。脚本尚未实现时在说明页登记待编写。
 
 ## 2. 人工审查并确认这个版本

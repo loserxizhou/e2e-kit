@@ -115,6 +115,8 @@ Reporter 本身失败不会改变原生退出码，所以批次入口另查交�
 python3 scripts/check-case-doc.py exports/用例文档.xlsx .e2e/runs/实际批次/report.json
 ```
 
+Windows 使用 `python`；也可以设置 `E2E_PYTHON` 为本机 Python 的完整路径。macOS/Linux 默认使用 `python3`。
+
 校验优先使用 Excel「用例编号」对应原生 `case:` 标签，旧用例按精确标题兼容；有编号的用例不退回标题误关联其他编号。未选中条目和 setup 排除，多目标/agent/重复导致歧义时需明确范围，不任取一次通过。
 
 `flaky` 要在备注写清重试后通过；超时/中断不能填整条通过，保留实际失败及未完成步骤。未知 schema 或状态不猜测结论。

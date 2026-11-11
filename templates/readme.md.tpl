@@ -61,7 +61,7 @@ Excel 是业务标准的审核入口，脚本承载执行；业务变化须重�
 
 ## 维护边界
 
-业务用例、场景 helper、用例 Excel/审核回执和有证据的知识记录由测试侧维护；`e2e.config.ts`、`package.json`、`scripts/**`、`templates/**`、`docs/**`、公共 helper 等框架文件由 e2e-kit 统一分发，测试任务不手改，遇到框架缺陷保留证据交接维护者。完整边界见 [维护与提交标准](docs/维护与提交标准.md)。
+业务用例、场景 helper、用例 Excel/审核回执和有证据的知识记录由测试侧维护；`e2e.config.ts`、`package.json`、`scripts/**`、`templates/**`、`docs/**`、公共 helper 等框架文件由本项目核心维护者在 Git 中维护，测试任务不手改。e2e-kit 只负责初始化和用户明确要求的框架迁移，Skill 是稳定路由层。完整边界见 [维护与提交标准](docs/维护与提交标准.md)。
 
 框架迁移：只有明确需要时运行 `e2e-kit upgrade`；默认只迁移项目框架文件，不刷新已安装 Skill。需要刷新 Skill/MCP 时显式加入 `--refresh-skill --client <客户端>`。随后按输出执行依赖安装，刷新 Skill 后再重启客户端。升级与执行意图说明见[怎么指挥 AI 跑测试](docs/怎么指挥AI跑测试.md)。
 
