@@ -35,7 +35,8 @@ export function help() {
 选项:
   --project <dir>      项目根（默认从当前目录向上定位）
   --migration <mode>   safe（默认，保护来源不明文件）| adopt（接管并刷新旧框架文件）
-  --client <name>      升级指定客户端的 e2e-kit Skill（逗号分隔）
+  --refresh-skill      显式刷新项目内 e2e-kit Skill/MCP 接入；默认不更新已安装 Skill
+  --client <name>      与 --refresh-skill 一起指定要刷新的客户端（逗号分隔）
   --dry-run            只打印计划，不写文件
   --json               以 JSON 输出结果（脚本用）
   -h, --help           显示本帮助
@@ -188,13 +189,15 @@ export async function runUpgrade(argv) {
     if (!dryRun) writeText(abs, file.content);
   }
 
-  // 刷新项目内 e2e-kit Skill。safe 只更新本 kit 生成且未被手改的副本，
-  // adopt 接管旧副本；这与框架文件使用同一迁移选择。
-  const clients = requestedClients(flags, marker, projectRoot);
+  // Skill 是稳定的路由层，默认不随框架升级刷新。只有显式要求刷新
+  // Skill，或显式指定 --client 时，才迁移客户端接入。
+  const refreshSkill = Boolean(flags.refreshSkill || flags.client !== undefined);
+  const clients = refreshSkill ? requestedClients(flags, marker, projectRoot) : [];
   const installed = clients.length && !dryRun
     ? installClients(clients, projectRoot, { migration, skillGenerated: marker?.skillGenerated })
     : { skillGenerated: marker?.skillGenerated ?? {}, clients: [] };
   result.skills = installed.clients;
+  result.refreshSkill = refreshSkill;
   for (const item of installed.clients) if (item.error) result.warnings.push(`客户端 ${item.client} Skill/MCP 接入失败：${item.error}`);
 
   // 刷新标记（记录新 hash 与版本；保留 clients 等用户字段）
@@ -211,11 +214,10 @@ export async function runUpgrade(argv) {
   }
 
   result.ok = true;
-  result.nextSteps = [
-    `cd ${relDir} && npm ci`,
-    `cd ${relDir} && npm run sync -- --client <客户端>` + (clients.length ? `（本次：${clients.join(',')}）` : ''),
-    '重启 AI 客户端使 MCP/Skill 生效',
-  ];
+  result.nextSteps = [`cd ${relDir} && npm ci`];
+  if (refreshSkill) {
+    result.nextSteps.push(`cd ${relDir} && npm run sync -- --client <客户端>` + (clients.length ? `（本次：${clients.join(',')}）` : ''), '重启 AI 客户端使 MCP/Skill 生效');
+  }
 
   if (json) {
     console.log(JSON.stringify(result, null, 2));

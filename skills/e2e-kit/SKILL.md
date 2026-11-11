@@ -1,66 +1,25 @@
 ---
 name: e2e-kit
-description: 初始化、升级、体检、运行本仓库的端到端测试（基于 tester-army/e2e），生成用例文档，并维护 e2e 与配套 kit 的一致性。用于写测试、跑测试、加用例、验收、复跑失败、页面实探，以及修改 e2e 模板、指引或校验脚本。
+description: 稳定的 e2e 项目路由入口。用于初始化、体检、显式框架迁移，以及指导 AI 使用项目内的 e2e 测试。
 ---
 
-# e2e-kit：端到端测试入口
+# e2e-kit：稳定路由入口
 
-本仓库的 UI 测试统一走 `e2e/` 目录下的 tester-army/e2e，不要另起测试框架，也不要写成单元测试（除非用户明确要求）。
+这个 Skill 只负责把请求路由到项目自己的 e2e 工程。项目内的 `e2e/README.md`、`e2e/docs/`、`e2e/templates/` 和根目录 `AGENTS.md` 是当前项目的规范来源；开始测试前先读取它们。Skill 本身不复制项目业务规则，也不因为新增业务用例而更新。
 
-`<dir>` 读项目根 `.e2e-kit.json` 的 `dir` 字段（默认 `e2e`）；`<kit>` 依次找 `~/.e2e-kit`、项目根 `e2e-kit/`、克隆的 eoffice-e2e 仓库目录，取第一个存在者。
+`<dir>` 读取项目根 `.e2e-kit.json` 的 `dir` 字段，默认是 `e2e`。`<kit>` 只在需要初始化、体检或显式迁移时使用。
 
-本 kit 分发工作流版本 0.4.0：外部 AI 负责编排测试和诊断；MCP 用于页面探查、定位器验证和问题诊断。需要探索的页面操作写入用例的 `agent.act`，由 e2e 运行器记录和回放；固定定位器操作和本轮断言继续由用例执行。不要用外部 AI 逐次通过 MCP 点页面替代整条回归。
-
-## 快速判断
-
-| 用户说 | 先做什么 |
+| 用户请求 | 操作 |
 | --- | --- |
-| 「初始化 e2e / 装一下测试环境」 | `bash <kit>/run.sh`（幂等只补缺；省略 `--client` 自动探测本机客户端，**不要替用户写死某个客户端**）。**全新项目**先向用户索取被测地址 APP_URL（必须以 `/` 结尾）与测试账号，密码经环境变量 `E2E_INIT_PASSWORD` 传入，不写进命令行 |
-| 「升级框架 / 收到升级通知」 | 先询问迁移模式：`safe` 保护来源不明/手改文件，`adopt` 接管旧框架；然后执行 `node <kit>/bin/e2e-kit.mjs upgrade --project .`。升级同时处理项目内 e2e-kit Skill，随后 `cd <dir> && npm ci && npm run sync -- --client <客户端>`，重启客户端 |
-| 「体检 / 环境有问题 / 先检查环境」 | `node <kit>/bin/e2e-kit.mjs doctor --project .`（只读，不改文件） |
-| 「跑一下测试 / 回归」 | `cd <dir> && npm run test:run -- tests/`（批次入口；先加 `--list` 预览范围） |
-| 「跑一下 / 跑一遍」（意图不明） | 先展示执行意图：体验 `experience`、冒烟 `smoke`、正式 `formal`、续跑 `resume`；`scratch` 或绑定 `--case-doc` 时缺 `--intent` 入口会拒绝启动 |
-| 「这条为什么红了」 | 失败详情读 `<dir>/.e2e/failures/`，操作录像/trace 在 `<dir>/.e2e/artifacts/` |
-| 「换了数据库 / 再跑一遍」 | 先按下方数据准备规则检查前置条件，再执行；不得盲用旧 ID 或直接运行含未确认清理步骤的脚本 |
-| 「页面长什么样 / 定位器对不对」 | 用 e2e MCP：`open_session` → `observe` → `locate` |
+| 初始化 e2e | `bash <kit>/run.sh`，向用户确认 APP_URL、账号和客户端；密码用 `E2E_INIT_PASSWORD` 传入 |
+| 体检环境 | `node <kit>/bin/e2e-kit.mjs doctor --project .` |
+| 明确升级框架 | `node <kit>/bin/e2e-kit.mjs upgrade --project .`；默认只迁移项目框架文件，不刷新已安装 Skill |
+| 明确刷新 Skill/MCP | 在升级命令中加入 `--refresh-skill --client <客户端>`，然后重启客户端 |
+| 跑回归 | `cd <dir> && npm run test:run -- --list` 预览，再按项目规范选择执行意图并运行 |
+| 页面探查或定位器诊断 | 使用 e2e MCP 的 `open_session → observe → locate` |
 
-客户端接入：自动探测只覆盖 Codex / Claude Code / Cursor；WorkBuddy / ZCode / DSH 探测不到，需用户确认后以 `--client workbuddy`（或对应名）显式指定，逗号分隔可多选。当前在哪个客户端里跑，就接哪个，不要假设。
+日常写用例和跑测试不需要运行 `e2e-kit upgrade`。业务用例、断言、步骤证据和项目公共 helper 按项目 Git 维护；只有框架缺陷、依赖升级或初始化兼容性变化才做显式框架迁移。迁移前先看项目工作流版本和变更记录，选择 `safe` 或 `adopt`；默认使用 `safe`。
 
-## 环境前置（踩坑高发）
+测试规则保持在项目中：先确认模块、流程、通过/失败标准和数据前提；先实探页面，再写定位器；新用例放 `scratch/`，确认后才进入 `tests/`。不要把外部 AI 通过 MCP 临时点击页面当作正式回归，也不要为了跑绿放宽断言。
 
-- Node ≥ 22.22.3，低版本框架直接拒绝（先 nvm 切版本再跑）；
-- `APP_URL` 指向内网明文 HTTP 时，跑测试前先 `cd <dir> && npm run forward -- 8010 <测试机IP> 8010` 并保持运行（目标 IP 必填）；
-- 环境异常先跑上面的 doctor，再用 `cd <dir> && npm run test:run -- tests/login.e2e.ts` 冒烟确认链路。
-
-## 写用例前必须确认
-
-1. 复述被测模块、操作流程、**什么算通过 / 什么算失败**，得到用户确认后再动手；
-2. 实探页面（MCP 或浏览器），禁止凭猜测写选择器；
-3. 新用例先放 `scratch/<模块>/<场景>/`，跑绿后按同构路径挪进 `tests/`（用例编号放各 `test()` 的 `case:` 标签）。
-
-## 硬规则
-
-- 一条用例只验证一个结论；断言优先用定位器/文本，**不要加固定 sleep**；
-- 写操作用唯一标记造数，运行后默认保留，不在末尾用例或 afterEach 中自动清理；删除功能本身属于已确认被测步骤时按验收意图执行；
-- 改断言标准必须由用户确认；允许直接修定位器、等待这类技术细节，但不得为让用例变绿而放宽标准；
-- 失败先看 trace，再判断是功能缺陷还是用例要修；
-- 密码只走 `credentials` 的 Secret 句柄，不写进代码、不进报告。
-
-## 换库与重复执行的数据准备
-
-- 准备方法、账号权限、实际 ID 和核验证据记录在用例文档；详细规则以 `<dir>/templates/测试用例文档格式.md`「换库、复跑与删除确认」为准。
-- 换库后按准备方法在目标环境重新准备、核验并更新 ID 和证据，不沿用旧库结论；同库复跑及自动重试前也检查存在性、状态、归属、权限和日期，符合即可复用。
-- 状态被消耗时优先另造相应数据，保留旧记录；确需删除时先列明环境、具体 ID、归属、原因和关联影响，取得用户对具体清单的确认后再删除、准备、核验、执行。不直接回改数据库状态。
-- 运行存量脚本前检查自动清理步骤；未经确认，不直接运行含此类步骤的脚本。前置条件不足说明原因并记未执行，不能把已发生的业务失败改为未执行。
-- 以上是 agent 工作流，不承诺 Excel 校验或 e2e 框架自动补数；不要求新增数据管理系统或强制数据集环境变量。
-
-## 用例文档与框架维护边界
-
-- 生成 Excel 前必读 `<dir>/templates/测试用例文档格式.md`，不凭会话记忆：固定说明、16 列明细、账号矩阵、测试数据、造数核验；涉及权限验证时必须有能力权限矩阵，说明页明确适用性。首次生成统一走 `npm run test:cases -- draft <json> --output <xlsx>`（输入见 `<dir>/docs/初稿生成入口.md`），测试人员确认后才 `test:cases confirm` 记录审核。
-- 设计初稿自检 `python3 <dir>/scripts/check-case-doc.py <xlsx> --draft`；执行结果回填后自检 `python3 <dir>/scripts/check-case-doc.py <xlsx> <本批次report.json>`，均修正到 0 error；前置核验不计入业务通过数，证据须附文件或可访问链接。
-- `<dir>/` 内的框架文件（配置、脚本、`templates/**`、`docs/**`、公共 helper）测试任务不手改；框架缺陷保留证据交接维护者，由 `e2e-kit upgrade` 统一升级。升级前必须让用户选择 `safe` 或 `adopt`；`safe` 不覆盖来源不明/手改文件，`adopt` 才接管旧框架。`.env`、业务用例、`scratch/`、`knowledge/`、`exports/` 永不触碰。
-
-## 参考规范
-
-- 本项目细节（目录与定稿规则、内网转发、已知环境问题、执行意图与批次管理）：`<dir>/README.md`、`<dir>/docs/` 与项目根 `AGENTS.md` 的「业务测试请求路由」块；
-- 框架细节：官方 e2e skill（`.agents/skills/e2e/SKILL.md`）。若未安装，用 `bash <kit>/run.sh` 补装；**不要运行 `npx e2e init`**（会覆盖已有配置）。
+框架迁移完成后，按项目 README 的说明执行依赖安装和必要的 `npm run sync`。`.env`、业务用例、草稿、知识库和导出文件属于项目资产，迁移工具不会主动覆盖。

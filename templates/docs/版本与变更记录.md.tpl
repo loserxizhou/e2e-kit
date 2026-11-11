@@ -1,7 +1,7 @@
 # e-office E2E 项目工作流版本与变更记录
 
 ```yaml
-workflowVersion: 0.4.0
+workflowVersion: 0.5.0
 releasedAt: 2026-11-10
 runtime: e2e 0.22.0 / @e2e-dev/web 0.15.4
 status: exploratory
@@ -43,6 +43,14 @@ status: exploratory
 - 本地显式启用 `.e2e/cache` 动作回放；页面或定位器变化时自动回到 live agent，并在摘要中标出 mixed/live。
 - 管理员 setup 优先使用同源认证接口写入现有登录态，减少重复打开登录页和输入凭据；特权账号仍保留独立登录流程。
 - 智能办公等待改为基于完成信号的 `expect.poll`，去掉固定 2 秒轮询和额外 1.5 秒收尾等待。
+
+## 0.5.0（2026-11-11）
+
+### 维护边界
+
+- 项目 Git 成为 e2e 核心代码、模板和流程文档的日常维护源；新增业务用例和核心修复不要求同步维护 e2e-kit。
+- e2e-kit 负责初始化和用户明确要求的框架迁移；`upgrade` 默认不刷新已安装的 e2e-kit Skill/MCP。
+- Skill 收敛为稳定路由层，只读取项目自己的 README、AGENTS、docs 和 templates；只有路由协议或客户端接入变化才显式刷新 Skill。
 
 
 ## AI 使用口径

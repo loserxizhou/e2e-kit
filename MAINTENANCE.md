@@ -67,6 +67,6 @@ git add templates && git commit && git push
 
 ## 版本与发布
 
-- 本 kit 版本：`package.json` 的 `version`（当前 0.3.0），分发的工作流版本见 payload `eofficeWorkflowVersion` 与 `templates/docs/版本与变更记录.md.tpl`；
+- 本 kit 版本：`package.json` 的 `version`（当前 0.4.0），分发的工作流版本见 payload `eofficeWorkflowVersion` 与 `templates/docs/版本与变更记录.md.tpl`；
 - 发布 = 提交并推送 main；同事侧通过 `git pull` + `e2e-kit upgrade` 获得更新；
 - 发布前检查：`npm test` 全绿、`node tools/refresh-from-source.mjs` 门禁通过、全仓库脱敏 grep 零命中。

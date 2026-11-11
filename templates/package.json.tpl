@@ -1,7 +1,7 @@
 {
   "name": "eoffice-e2e",
   "private": true,
-  "eofficeWorkflowVersion": "0.4.0",
+  "eofficeWorkflowVersion": "0.5.0",
   "type": "module",
   "scripts": {
     "test:run": "node scripts/run.mjs",

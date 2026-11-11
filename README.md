@@ -2,7 +2,7 @@
 
 e-office e2e 测试一键接入工具包：**一条命令完成项目初始化 + 客户端 MCP/Skill 配置**，之后全部用自然语言让 agent 干活；框架升级不覆盖手改文件。
 
-基于 [tester-army/e2e](https://github.com/tester-army/e2e)（自然语言测试目标 + AI agent 驱动页面操作 + 传统定位器断言兜底）。当前分发的工作流版本 `0.4.0`（e2e `0.22.0` / Web `0.15.4`）。
+基于 [tester-army/e2e](https://github.com/tester-army/e2e)（自然语言测试目标 + AI agent 驱动页面操作 + 传统定位器断言兜底）。当前分发的工作流版本 `0.5.0`（e2e `0.22.0` / Web `0.15.4`）。
 
 ## 快速开始
 

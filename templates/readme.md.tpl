@@ -1,11 +1,11 @@
 # {{PROJECT_NAME}} e2e 测试
 
-**项目工作流版本：`0.4.0`** · **底层 e2e：`{{E2E_VERSION}}` / Web `{{WEB_VERSION}}`**
+**项目工作流版本：`0.5.0`** · **底层 e2e：`{{E2E_VERSION}}` / Web `{{WEB_VERSION}}`**
 AI 开始任何测试任务前，先读取[版本与变更记录](docs/版本与变更记录.md)，再读取[维护与提交标准](docs/维护与提交标准.md)和[Excel 用例工作流](docs/Excel用例工作流.md)。项目工作流版本和底层框架版本分别管理，不能把其中一个当成另一个。
 
 基于 [tester-army/e2e](https://github.com/tester-army/e2e)：自然语言描述测试目标 + AI agent 驱动页面操作 + 传统定位器断言兜底；不含 agent 步骤的测试完全不需要模型。
 
-本目录由 `e2e-kit` 初始化生成：初始化只补缺、不覆盖已有文件；框架文件（配置、脚本、模板、docs）通过 `e2e-kit upgrade` 统一升级，手改过的文件会被跳过并列出，业务用例与知识记录不受影响。
+本目录由 `e2e-kit` 初始化生成，之后由本项目 Git 维护。初始化只补缺、不覆盖已有文件；日常新增用例和框架维护不需要更新 e2e-kit 或 Skill。只有明确的框架迁移才使用 `e2e-kit upgrade`，手改过的文件会被跳过并列出。
 
 ## 快速开始
 
@@ -63,7 +63,7 @@ Excel 是业务标准的审核入口，脚本承载执行；业务变化须重�
 
 业务用例、场景 helper、用例 Excel/审核回执和有证据的知识记录由测试侧维护；`e2e.config.ts`、`package.json`、`scripts/**`、`templates/**`、`docs/**`、公共 helper 等框架文件由 e2e-kit 统一分发，测试任务不手改，遇到框架缺陷保留证据交接维护者。完整边界见 [维护与提交标准](docs/维护与提交标准.md)。
 
-框架升级：运行 `e2e-kit upgrade`，先选择迁移模式。`safe` 只刷新有生成记录且未手改的框架文件；`adopt` 接管来源不明或手改的旧框架文件。两种模式都会按同一规则处理项目内的 e2e-kit Skill，`.env`、业务用例、草稿、知识和导出文件不会触碰。随后执行 `npm ci && npm run sync -- --client <客户端>`，重启客户端。升级与执行意图说明见[怎么指挥 AI 跑测试](docs/怎么指挥AI跑测试.md)。
+框架迁移：只有明确需要时运行 `e2e-kit upgrade`；默认只迁移项目框架文件，不刷新已安装 Skill。需要刷新 Skill/MCP 时显式加入 `--refresh-skill --client <客户端>`。随后按输出执行依赖安装，刷新 Skill 后再重启客户端。升级与执行意图说明见[怎么指挥 AI 跑测试](docs/怎么指挥AI跑测试.md)。
 
 ## 常用命令
 

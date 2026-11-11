@@ -27,12 +27,12 @@
 | 运行产物 | `e2e/.e2e*/`、缓存、报告、截图、录像、登录态 | 由工具生成；AI 读取、解释和交付必要证据 | 不提交、不手工修改来改变运行结论 |
 | 公共 helper | `{{DIR}}/helpers/**`，含模块公共 helper、`auth-session.ts`、`assistant-panel.ts` | 读取、调用；问题交接维护者 | 测试任务禁止修改、新增、删除或移动 |
 | 基础设施用例 | `{{DIR}}/tests/` 根部文件，含 `auth.setup.e2e.ts`、`login.e2e.ts` | 按已有入口运行、复用 session | 测试任务禁止修改或新增基础设施 |
-| 运行与分发核心 | `{{DIR}}/e2e.config.ts`、`package.json`、锁文件、`tsconfig.json`、`scripts/**`、`.env.example`、忽略规则、kit 与绑定配置 | 使用已发布能力，按 README 安装/同步 | 测试任务禁止手工改写或升级 |
-| 工作流规范 | `AGENTS.md`、`{{DIR}}/README.md`、本标准、`{{DIR}}/templates/**`、Skill 与其他操作指引 | 读取、遵循；改进建议交接维护者 | 测试任务禁止修改 |
+| 运行与分发核心 | `{{DIR}}/e2e.config.ts`、`package.json`、锁文件、`tsconfig.json`、`scripts/**`、`.env.example`、忽略规则、kit 与绑定配置 | 使用已发布能力，按 README 安装；核心维护者在项目 Git 中维护 | 测试任务禁止手工改写或升级 |
+| 工作流规范 | `AGENTS.md`、`{{DIR}}/README.md`、本标准、`{{DIR}}/templates/**`、Skill 与其他操作指引 | 读取、遵循；项目规范在本项目 Git 中更新 | 测试任务禁止修改 |
 
 目录只是第一层判断。把公共登录、模型接入、环境转发、运行器补丁等核心实现放进场景目录、知识文档或草稿，不会使其变成测试资产。测试任务也不得修改被测系统自身的源代码来让用例通过。
 
-执行现有 `npm ci`、`npm run sync` 等已发布安装/同步流程时，允许其按 README 更新依赖安装目录、浏览器、官方 Skill、本机客户端配置及 `.e2e-kit.json` 的版本标记。这不授权手工更改工具逻辑、版本或锁文件。出现清单外改动时先核对原因，不直接提交。
+执行现有 `npm ci`、`npm run sync` 等已发布安装/同步流程时，允许其按 README 更新依赖安装目录、浏览器、官方 e2e Skill、本机客户端配置及 `.e2e-kit.json` 的版本标记。e2e-kit 的 `upgrade` 默认不刷新项目内 e2e-kit Skill；只有用户明确要求并指定 `--refresh-skill` 时才更新。出现清单外改动时先核对原因，不直接提交。
 
 ## 三、helper 的边界
 

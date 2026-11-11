@@ -144,18 +144,38 @@ test('upgrade 迁移模式：safe 保护旧框架与 Skill，adopt 明确接管�
   writeFileSync(skill, `${readFileSync(skill, 'utf8')}\n用户定制\n`);
   writeFileSync(join(project, 'e2e', 'docs', '运行与结果管理.md'), '# 旧版手改\n');
 
-  const safe = run('upgrade', project, ['--migration', 'safe']);
+  const safe = run('upgrade', project, ['--migration', 'safe', '--refresh-skill']);
   assert.equal(safe.res.status, 0, safe.stderr);
   assert.equal(safe.json.migration, 'safe');
   assert.match(readFileSync(skill, 'utf8'), /用户定制/);
   assert.equal(readFileSync(join(project, 'e2e', 'docs', '运行与结果管理.md'), 'utf8'), '# 旧版手改\n');
   assert.ok(safe.json.skills.some((item) => item.skipped.some((path) => path.includes('用户已修改'))));
 
-  const adopted = run('upgrade', project, ['--migration', 'adopt']);
+  const adopted = run('upgrade', project, ['--migration', 'adopt', '--refresh-skill']);
   assert.equal(adopted.res.status, 0, adopted.stderr);
   assert.equal(adopted.json.migration, 'adopt');
   assert.doesNotMatch(readFileSync(skill, 'utf8'), /用户定制/);
   assert.notEqual(readFileSync(join(project, 'e2e', 'docs', '运行与结果管理.md'), 'utf8'), '# 旧版手改\n');
+});
+
+test('upgrade 默认不刷新已安装 Skill，显式参数才刷新', () => {
+  const project = makeProject();
+  const seeded = run('init', project, ['--url', 'http://localhost:4200/', '--user', 'admin', '--client', 'codex']);
+  assert.equal(seeded.res.status, 0, seeded.stderr);
+  const skill = join(project, '.agents', 'skills', 'e2e-kit', 'SKILL.md');
+  const before = readFileSync(skill, 'utf8');
+  writeFileSync(skill, `${before}\n用户定制\n`);
+
+  const defaultUpgrade = run('upgrade', project, ['--migration', 'safe']);
+  assert.equal(defaultUpgrade.res.status, 0, defaultUpgrade.stderr);
+  assert.equal(defaultUpgrade.json.refreshSkill, false);
+  assert.equal(readFileSync(skill, 'utf8'), `${before}\n用户定制\n`);
+  assert.deepEqual(defaultUpgrade.json.skills, []);
+
+  const refresh = run('upgrade', project, ['--migration', 'adopt', '--refresh-skill', '--client', 'codex']);
+  assert.equal(refresh.res.status, 0, refresh.stderr);
+  assert.equal(refresh.json.refreshSkill, true);
+  assert.doesNotMatch(readFileSync(skill, 'utf8'), /用户定制/);
 });
 
 test('upgrade 旧项目：safe 保留来源不明文件，adopt 才接管', () => {
